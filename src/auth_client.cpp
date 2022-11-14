@@ -8,7 +8,8 @@
 #include <unistd.h>
 #include <climits>
 //Standart object
-#include "customer.h"
+#include "Customer.h"
+#include "Customers.h"
 
 using namespace std;
 
@@ -19,10 +20,8 @@ void ShowCustomerList(int);
 int Connect(int);
 void Disconnect(int,int);
 int Menu();
-
-//Function from the web
-enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
-STR2INT_ERROR str2int (int &i, char const *s, int base = 0);
+string CommandWriter(string, string);
+vector<string> command_reader(string[],Customers,int);
 
 
 int main(int argc,char* argv[])
@@ -33,18 +32,18 @@ int main(int argc,char* argv[])
     bool fini = false;
     while(!fini)
     {
-    if (argc == 2) { choix = atoi(argv[1]); fini = true; }
-    else choix = Menu();
-    switch(choix)
-    {
-        case 1 : AddCustomer(socket); break;
-        case 2 : AddCustomer(socket); break;
-        case 3 : DeleteCustomer(socket); break;
-        case 4 : ShowCustomerList(socket); break;
-        case 5 : client_fd = Connect(socket); break;
-        case 6 : Disconnect(socket,client_fd); break;
-        default : fini = true ; break;
-    }
+        if (argc == 2) { choix = atoi(argv[1]); fini = true; }
+        else choix = Menu();
+        switch(choix)
+        {
+            case 1 : AddCustomer(socket); break;
+            case 2 : AddCustomer(socket); break;
+            case 3 : DeleteCustomer(socket); break;
+            case 4 : ShowCustomerList(socket); break;
+            case 5 : client_fd = Connect(socket); break;
+            case 6 : Disconnect(socket,client_fd); break;
+            default : fini = true ; break;
+        }
     }
     return 0;
 }
@@ -123,27 +122,67 @@ int Connect(int  sock)
     cout<< "Please Enter the port (example 5050): ";
     cin >> port;
     sockaddr.sin_family=AF_INET; //IPV4
-    if(((str2int(port_int,port.c_str(),0))  !=  SUCCESS))
+    port_int = stoi(port);
+    sockaddr.sin_port = htons(port_int);
+    if ((  client_fd = connect(sock, (struct sockaddr*)&sockaddr,sizeof(sockaddr))) < 0) 
     {
-        perror("Ip Inconvertible");
+        perror("Connection failed");
         exit(EXIT_FAILURE);
-    }else{
-        sockaddr.sin_port = htons(port_int);
-        if ((  client_fd = connect(sock, (struct sockaddr*)&sockaddr,sizeof(sockaddr))) < 0) 
-        {
-            perror("Connection failed");
-            exit(EXIT_FAILURE);
-        }
     }
     return client_fd;
+
+    //Post Authentication
+    cout<< "---------------------------------------------------------------------------"<< endl;
+    cout<< "-------Login---------------------------------------------------------------"<< endl;
+    cout<< "---------------------------------------------------------------------------"<< endl<<endl;
+    string login,password,buff;
+    cout << "Please enter Id : " << endl;cout.flush();
+    cin >> login;
+    cout << "Please enter name : " << endl;cout.flush();
+    cin >> password;
+    buff = CommandWriter("PI",string(login +',' + password));
+    send(sock, buff.c_str(), buff.length(), 0);
+    
     cout<< "-----------------You're connected------------------------------------------"<< endl;
 }
-    
+string CommandBuilder(string Command, string Attribute){
+    int command_size = sizeof(int) + Command.length() + Attribute.length();
+    string buff = string(Command.c_str() + ',' + command_size + Attribute);
+    return buff;
+}
+vector<string> command_reader(string s[],Customers c,int socket)
+{
+    //GetData >> GD,customer.to_string()
+    if (!strcmp(s[0].c_str(), "GD"))
+    {
+        cout<<"GC";cout.flush();
+        getData(s,c,socket);
+    }
+    //GetData >> GD,customer.to_string()
+    else if (!strcmp(s[0].c_str(), "PD"))
+    {
+        cout<<"PC";cout.flush();
+        postData(s,c,socket);
+    }
+    //GetData >> GD,customer.to_string()
+    else if (!strcmp(s[0].c_str(), "RD"))
+    {
+        cout<<"RC";cout.flush();
+        removeData(s,c,socket);
+    }
+    //GetData >> GD,customer.to_string()
+    else if (!strcmp(s[0].c_str(), "PI"))
+    {
+        cout<<"PI";cout.flush();
+        postIdentification(s,c,socket);
+    }  
+}
 void Disconnect(int sock, int client_fd)
 {
     close(client_fd);
     cout<< "-----------------You're disconnected---------------------------------------"<< endl;
 }
+
 int Menu()
 {
   cout << endl;
@@ -162,23 +201,4 @@ int Menu()
   cin >> ch;
   cin.ignore();
   return ch;
-}
-//https://stackoverflow.com/questions/194465/how-to-parse-a-string-to-an-int-in-c
-STR2INT_ERROR str2int (int &i, char const *s, int base)
-{
-    char *end;
-    long  l;
-    errno = 0;
-    l = strtol(s, &end, base);
-    if ((errno == ERANGE && l == LONG_MAX) || l > INT_MAX) {
-        return OVERFLOW;
-    }
-    if ((errno == ERANGE && l == LONG_MIN) || l < INT_MIN) {
-        return UNDERFLOW;
-    }
-    if (*s == '\0' || *end != '\0') {
-        return INCONVERTIBLE;
-    }
-    i = l;
-    return SUCCESS;
 }

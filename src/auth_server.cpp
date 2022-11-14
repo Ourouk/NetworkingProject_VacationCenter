@@ -76,7 +76,7 @@ int main(int argc,char* argv[])
     }
     cout<<"Connection Made on socket nbr " << new_socket<<endl;cout.flush();
     string propertie_buff,line_buff;
-    char buffer[1024],command_type_buffer[2],command_size_buffer[sizeof(int)],*command_content_buffer;
+    char command_type_buffer[2],command_size_buffer[sizeof(int)],*command_content_buffer;
     
     vector<string> properties_buff;
     bool notfinished =false;
@@ -124,19 +124,19 @@ void command_reader(string s[],Customers c,int socket)
     //GetData >> GD,customer.to_string()
     if (!strcmp(s[0].c_str(), "GD"))
     {
-        cout<<"GD";cout.flush();
+        cout<<"GC";cout.flush();
         getData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
     else if (!strcmp(s[0].c_str(), "PD"))
     {
-        cout<<"PD";cout.flush();
+        cout<<"PC";cout.flush();
         postData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
     else if (!strcmp(s[0].c_str(), "RD"))
     {
-        cout<<"RD";cout.flush();
+        cout<<"RC";cout.flush();
         removeData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
@@ -144,7 +144,7 @@ void command_reader(string s[],Customers c,int socket)
     {
         cout<<"PI";cout.flush();
         postIdentification(s,c,socket);
-    }      
+    }  
 }
 void getData(string s[],Customers c,int socket){
 
@@ -156,5 +156,24 @@ void removeData(string s[],Customers c,int socket){
 
 }
 void postIdentification(string s[],Customers c,int socket){
-
+    string command_buff = "GI,1,";
+    
+    if(s[1].compare("admin") && s[2].compare("admin"))
+    {
+        command_buff.insert(command_buff.back(),sizeof('S'),'S');
+        if ( send(socket,"S", sizeof("S"), 0) == -1)
+        {
+            perror("Send");
+            exit(EXIT_FAILURE);
+        }
+    }else
+    {
+        command_buff.insert(command_buff.back(),sizeof('E'),'E');
+        if ( send(socket, "E", sizeof("E"), 0) == -1)
+        {
+            perror("Send");
+            exit(EXIT_FAILURE);
+        }
+    }
+    
 }
