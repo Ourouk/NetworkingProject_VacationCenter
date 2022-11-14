@@ -9,8 +9,8 @@
 #include <climits>
 
 //Standart Objects 
-#include "customer.h"
-#include "customers.h"
+#include "Customer.h"
+#include "Customers.h"
 
 void command_reader(string[],Customers,int);
 void getData(string[],Customers,int);

@@ -1,12 +1,15 @@
 #include <iostream>
 
 //C Include to make network work
-#include <arpa/inet.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h> 
+#include <arpa/inet.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <climits>
+
+
 //Standart object
 #include "Customer.h"
 #include "Customers.h"
@@ -20,7 +23,7 @@ void ShowCustomerList(int);
 int Connect(int);
 void Disconnect(int,int);
 int Menu();
-string CommandWriter(string, string);
+void* CommandWriter(string, string);
 vector<string> command_reader(string[],Customers,int);
 
 
@@ -87,7 +90,7 @@ void DeleteCustomer(int sock)
     cout << "Please enter Id : " << endl;cout.flush();
     cin >> id;
     int stringsize = sizeof("rd"+id);
-    string buff = "RD"+','+stringsize+','+id;
+    string buff = "RD"+','+ to_string(stringsize) +','+id;
     send(sock,buff.c_str(),buff.length(),0);
 }
 void ShowCustomerList(int sock)
@@ -146,8 +149,16 @@ int Connect(int  sock)
     cout<< "-----------------You're connected------------------------------------------"<< endl;
 }
 string CommandBuilder(string Command, string Attribute){
-    int command_size = sizeof(int) + Command.length() + Attribute.length();
-    string buff = string(Command.c_str() + ',' + command_size + Attribute);
+    int size = Command.length() + sizeof(int) + ',' + Attribute.length() + sizeof('\0');
+    void* str = malloc(size);
+    strcat(str,Command.c_str());
+    char buff[sizeof(int)+1];
+    memset(str,size,sizeof(int));
+    buff[sizeof(int)] = '\0';
+    strcat(str,buff);
+    strcat(str,',');
+    strcat(str,Attribute.c_str());
+    string buff = string(str);
     return buff;
 }
 vector<string> command_reader(string s[],Customers c,int socket)
@@ -156,25 +167,21 @@ vector<string> command_reader(string s[],Customers c,int socket)
     if (!strcmp(s[0].c_str(), "GD"))
     {
         cout<<"GC";cout.flush();
-        getData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
     else if (!strcmp(s[0].c_str(), "PD"))
     {
         cout<<"PC";cout.flush();
-        postData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
     else if (!strcmp(s[0].c_str(), "RD"))
     {
         cout<<"RC";cout.flush();
-        removeData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
     else if (!strcmp(s[0].c_str(), "PI"))
     {
         cout<<"PI";cout.flush();
-        postIdentification(s,c,socket);
     }  
 }
 void Disconnect(int sock, int client_fd)

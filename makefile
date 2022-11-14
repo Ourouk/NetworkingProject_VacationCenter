@@ -3,7 +3,7 @@ SRC=./src
 #Target Directory
 TARGET=./build
 #Compiler parameters
-COMPILER_CPP= g++
+COMPILER_CPP= clang++
 CFLAGS = -g -Wall
 
 all: default 

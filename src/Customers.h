@@ -1,6 +1,6 @@
 #ifndef CUSTOMERS_LIST
 #define CUSTOMERS_LIST
-#include "customer.h"
+#include "Customer.h"
 #include <iostream>
 #include <iterator>
 #include <fstream>
