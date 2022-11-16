@@ -10,10 +10,6 @@ Customers::~Customers()
 {
     data_file.close();
 }
-// const list<Customer> Customers::getCustomers() const
-// {
-//     return customers;
-// }
 void Customers::save_insert(string s)
 {
     data_file.write(s.c_str() + '\n',s.length()+sizeof('\n'));

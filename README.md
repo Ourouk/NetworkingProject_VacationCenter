@@ -4,9 +4,9 @@
 ### GetCustomer
 | GD  PacketSize | CustomerID |
 ### PostCustomer
-| PD  PacketSize | CustomerID | CustomerName | CustomerSurname | CustomerBirthdate | CustomerPresense |
+| PC  PacketSize | CustomerID | CustomerName | CustomerSurname | CustomerBirthdate | CustomerPresense |
 ### RemoveCustomer
-| RD  PacketSize | CustomerID |
+| RC  PacketSize | CustomerID |
 ### PostIdentification
 | PI  PacketSize | Login | Password |
 ### GetResult

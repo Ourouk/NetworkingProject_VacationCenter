@@ -12,12 +12,12 @@
 #include "Customer.h"
 #include "Customers.h"
 
-void command_reader(string[],Customers,int);
-void getData(string[],Customers,int);
-void postData(string[],Customers,int);
-void removeData(string[],Customers,int);
-void postIdentification(string[],Customers,int);
-void dontKnowWhatToDo(string[],Customers,int);
+void command_reader(vector<string>,Customers,int);
+void getData(vector<string>,Customers,int);
+void postData(vector<string>,Customers,int);
+void removeData(vector<string>,Customers,int);
+void postIdentification(vector<string>,Customers,int);
+void dontKnowWhatToDo(vector<string>,Customers,int);
 
 int main(int argc,char* argv[])
 {
@@ -76,42 +76,83 @@ int main(int argc,char* argv[])
     }
     cout<<"Connection Made on socket nbr " << new_socket<<endl;cout.flush();
     string propertie_buff,line_buff;
-    char command_type_buffer[2],command_size_buffer[sizeof(int)],*command_content_buffer;
-    
+    //The Command size is encoded in int -> 32bit signed
+    char command_type_buffer[2],command_size_buffer[8];
+    char command_type_buffer_temp[2],command_size_buffer_temp[8];
     vector<string> properties_buff;
-    bool notfinished =false;
+    bool finished =false;
 
-    while(notfinished)
+    while(!finished)
     {
+        //Thanks to https://stackoverflow.com/questions/31867598/reading-the-maximum-size-of-an-expected-packet-from-a-c-socket for the way of handling partial message
+        int recv_lenght, used_buff = 0;
+        bool recieved_whole = false;
         //All Message Start by a Command key of two char
-        if(recv(server_fd, command_type_buffer, sizeof(command_type_buffer),0)== -1);
-        {
-            perror("Recv Command Type");
-            exit(EXIT_FAILURE);
+        while(!recieved_whole){
+            if( (recv_lenght= recv(new_socket, command_type_buffer_temp + used_buff, sizeof(command_type_buffer) - used_buff,0)) == -1)
+            {
+                perror("Recv Command Type");
+                exit(EXIT_FAILURE);
+            }if(recv_lenght == 0 )
+            {
+                cout<<"Connection Closed";cout.flush();
+                finished =true;
+                break;
+            }
+            used_buff += recv_lenght;
+            if(used_buff == sizeof(command_type_buffer)) 
+                recieved_whole = true;
+            else{
+                break;
+            }
         }
         //Add the command string to dispatch correctly to a functions
         properties_buff.push_back(command_type_buffer);
-        if( recv(server_fd, command_size_buffer, sizeof(command_size_buffer),0) == -1);
+        //TODO Handle partial Recieved message
+        if( (recv_lenght = recv(new_socket, command_size_buffer, sizeof(command_size_buffer),0)) == -1)
         {
             perror("Recv Command Size");
             exit(EXIT_FAILURE);
         }
-        command_content_buffer = (char*)(malloc( sizeof(char) * std::stoi(command_size_buffer)));
+        int command_size;
+        //Read the int following the Command_Type
+        command_size = ((command_size_buffer[0] << 0) & 0xFF) + ((command_size_buffer[1] << 8) & 0xFF) +  ((command_size_buffer[2] << 16) & 0xFF) +  ((command_size_buffer[3] << 24) & 0xFF);
+        int command_size_without_header = command_size - sizeof(int) - 2 + 1; //Header Contain two char followed by a int
         
-        if(recv(server_fd, command_content_buffer, sizeof(command_content_buffer),0) == -1);
+        //Alloc the good size
+        char *command_content_buffer = (char*)(malloc( sizeof(char) * command_size_without_header));
+        char *command_content_buffer_persistant = (char*)(malloc( sizeof(char) * command_size_without_header));
+
+        //Read the whole command
+        
+        int buff_used = 0;
+        //TODO Handle partial Recieved message
+        while(!recieved_whole)
         {
-            perror("Recv Command Size");
-            exit(EXIT_FAILURE);
+            if((recv_lenght = recv(new_socket, command_content_buffer, sizeof(command_size_without_header) - buff_used,0)) == -1)
+            {
+                perror("Recv Command Size");
+                exit(EXIT_FAILURE);
+            } 
+
         }
-        stringstream buffer_line(command_content_buffer);
-        int it = 0;
+
+        free(command_content_buffer);
+        
+        //Parse the command inside a vector using separator ','
+        stringstream buffer_line(command_content_buffer_persistant);
         while(getline(buffer_line,propertie_buff,','))
         {
-
             properties_buff.push_back(propertie_buff);
-            it++;
         }
-        free(command_content_buffer);
+        free(command_content_buffer_persistant);
+
+        //Call Appropriate Function to handle the response
+        command_reader(properties_buff,Customers,server_fd);
+
+        //reset the buffer to avoid undetermined size buffer
+        properties_buff.clear();
+
     }
     // closing the connected socket
     close(new_socket);
@@ -119,43 +160,44 @@ int main(int argc,char* argv[])
     shutdown(server_fd, SHUT_RDWR);
     return 0;
 }
-void command_reader(string s[],Customers c,int socket)
+//Read the command type and dispatch to the right handler
+void command_reader(vector<string> s,Customers c,int socket)
 {
     //GetData >> GD,customer.to_string()
-    if (!strcmp(s[0].c_str(), "GD"))
+    if (!strcmp((s[0]).c_str(), "GD"))
     {
         cout<<"GC";cout.flush();
         getData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
-    else if (!strcmp(s[0].c_str(), "PD"))
+    else if (!strcmp((s[0]).c_str(), "PD"))
     {
         cout<<"PC";cout.flush();
         postData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
-    else if (!strcmp(s[0].c_str(), "RD"))
+    else if (!strcmp((s[0]).c_str(), "RD"))
     {
         cout<<"RC";cout.flush();
         removeData(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
-    else if (!strcmp(s[0].c_str(), "PI"))
+    else if (!strcmp((s[0]).c_str(), "PI"))
     {
         cout<<"PI";cout.flush();
         postIdentification(s,c,socket);
     }  
 }
-void getData(string s[],Customers c,int socket){
+void getData(vector<string> s,Customers c,int socket){
 
 }
-void postData(string s[],Customers c,int socket){
+void postData(vector<string> s,Customers c,int socket){
 
 }
-void removeData(string s[],Customers c,int socket){
+void removeData(vector<string> s,Customers c,int socket){
 
 }
-void postIdentification(string s[],Customers c,int socket){
+void postIdentification(vector<string> s,Customers c,int socket){
     string command_buff = "GI,1,";
     
     if(s[1].compare("admin") && s[2].compare("admin"))

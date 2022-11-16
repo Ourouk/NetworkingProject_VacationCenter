@@ -23,7 +23,7 @@ void ShowCustomerList(int);
 int Connect(int);
 void Disconnect(int,int);
 int Menu();
-void* CommandWriter(string, string);
+string CommandBuilder(string, string);
 vector<string> command_reader(string[],Customers,int);
 
 
@@ -61,6 +61,7 @@ int CreateSocket()
     }else
       return sock;
 }
+
 void AddCustomer(int sock){
     cout<< "---------------------------------------------------------------------------"<< endl;
     cout<< "-------Add Customers-------------------------------------------------------"<< endl;
@@ -77,10 +78,14 @@ void AddCustomer(int sock){
     cout << "Please enter 1 or 0 if present or not : ";cout.flush();
     cin >> presence;
     //Forge the string to send
-    int stringsize = sizeof("PD,"+id+','+name+','+surname+','+birthday+','+presence) + sizeof(int);
-    string buff = "PD,"+stringsize+','+id+','+name+','+surname+','+birthday+','+presence;
-    send(sock, buff.c_str(), buff.length(), 0);
+    // int stringsize = sizeof("PD,"+id+','+name+','+surname+','+birthday+','+presence) + sizeof(int);
+    // string buff = "PD,"+stringsize+','+id+','+name+','+surname+','+birthday+','+presence;
+    // send(sock, buff.c_str(), buff.length(), 0);
+    string Command = "PC"; //Post Customer
+    string built_command =  CommandBuilder(Command,string(id+','+name+','+surname+','+birthday+','+presence));
+    send(sock, built_command.c_str(),built_command.size()+1,0);
 }
+
 void DeleteCustomer(int sock)
 {
     cout<< "---------------------------------------------------------------------------"<< endl;
@@ -143,21 +148,32 @@ int Connect(int  sock)
     cin >> login;
     cout << "Please enter name : " << endl;cout.flush();
     cin >> password;
-    buff = CommandWriter("PI",string(login +',' + password));
+    buff = CommandBuilder(string("PI"),string(login +',' + password));
     send(sock, buff.c_str(), buff.length(), 0);
     
     cout<< "-----------------You're connected------------------------------------------"<< endl;
 }
 string CommandBuilder(string Command, string Attribute){
     int size = Command.length() + sizeof(int) + ',' + Attribute.length() + sizeof('\0');
-    void* str = malloc(size);
-    strcat(str,Command.c_str());
-    char buff[sizeof(int)+1];
-    memset(str,size,sizeof(int));
-    buff[sizeof(int)] = '\0';
-    strcat(str,buff);
-    strcat(str,',');
+    char* str = (char *)malloc(size);
+    strcpy(str,Command.c_str());
+
+    //These lines write the int as 4 char
+    char bytes[5];
+
+    bytes[0] = (size >> 24) & 0xFF;
+    bytes[1] = (size >> 16) & 0xFF;
+    bytes[2] = (size >> 8) & 0xFF;
+    bytes[3] = size & 0xFF;
+    bytes[4] = '\n';
+
+    strcat(str,bytes);
+    strcat(str,",");
     strcat(str,Attribute.c_str());
+
+    #ifdef DEBUG
+        cout<< "Command : " << str << endl;cout.flush(); //Doesn't seem to show random caracters from the int...
+    #endif
     string buff = string(str);
     return buff;
 }
@@ -168,7 +184,7 @@ vector<string> command_reader(string s[],Customers c,int socket)
     {
         cout<<"GC";cout.flush();
     }
-    //GetData >> GD,customer.to_string()
+    //GetData >> GD,customer.to_string()    
     else if (!strcmp(s[0].c_str(), "PD"))
     {
         cout<<"PC";cout.flush();
