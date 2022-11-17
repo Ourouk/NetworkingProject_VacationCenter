@@ -23,7 +23,7 @@ void ShowCustomerList(int);
 int Connect(int);
 void Disconnect(int,int);
 int Menu();
-string CommandBuilder(string, string);
+void* CommandBuilder(string, string, int * );
 vector<string> command_reader(string[],Customers,int);
 
 
@@ -82,8 +82,9 @@ void AddCustomer(int sock){
     // string buff = "PD,"+stringsize+','+id+','+name+','+surname+','+birthday+','+presence;
     // send(sock, buff.c_str(), buff.length(), 0);
     string Command = "PC"; //Post Customer
-    string built_command =  CommandBuilder(Command,string(id+','+name+','+surname+','+birthday+','+presence));
-    send(sock, built_command.c_str(),built_command.size()+1,0);
+    int *lenght;
+    void *buff = CommandBuilder(Command,string(id+','+name+','+surname+','+birthday+','+presence),lenght);
+    send(sock, buff ,*lenght,0);
 }
 
 void DeleteCustomer(int sock)
@@ -143,39 +144,36 @@ int Connect(int  sock)
     cout<< "---------------------------------------------------------------------------"<< endl;
     cout<< "-------Login---------------------------------------------------------------"<< endl;
     cout<< "---------------------------------------------------------------------------"<< endl<<endl;
-    string login,password,buff;
+    string login,password;
     cout << "Please enter Id : " << endl;cout.flush();
     cin >> login;
     cout << "Please enter name : " << endl;cout.flush();
     cin >> password;
-    buff = CommandBuilder(string("PI"),string(login +',' + password));
-    send(sock, buff.c_str(), buff.length(), 0);
+    int *lenght;
+    void *buff = CommandBuilder(string("PI"),string(login +',' + password),lenght);
+    send(sock,buff,*lenght, 0);
     
     cout<< "-----------------You're connected------------------------------------------"<< endl;
 }
-string CommandBuilder(string Command, string Attribute){
+void * CommandBuilder(string Command, string Attribute, int *lenght){
     int size = Command.length() + sizeof(int) + ',' + Attribute.length() + sizeof('\0');
     char* str = (char *)malloc(size);
     strcpy(str,Command.c_str());
 
     //These lines write the int as 4 char
-    char bytes[5];
-
+    char bytes[4];
     bytes[0] = (size >> 24) & 0xFF;
     bytes[1] = (size >> 16) & 0xFF;
     bytes[2] = (size >> 8) & 0xFF;
     bytes[3] = size & 0xFF;
-    bytes[4] = '\n';
 
-    strcat(str,bytes);
+    strcpy(str,"aaaa"); //Put for empty share inside the str
     strcat(str,",");
     strcat(str,Attribute.c_str());
-
-    #ifdef DEBUG
-        cout<< "Command : " << str << endl;cout.flush(); //Doesn't seem to show random caracters from the int...
-    #endif
-    string buff = string(str);
-    return buff;
+ 
+    memcpy(str+2,bytes,sizeof(bytes)); //Put brut int inside the tcp packet
+    *lenght = size;
+    return str;
 }
 vector<string> command_reader(string s[],Customers c,int socket)
 {
