@@ -67,13 +67,13 @@ void AddCustomer(int sock){
     cout<< "-------Add Customers-------------------------------------------------------"<< endl;
     cout<< "---------------------------------------------------------------------------"<< endl<<endl;
     string id,name,surname,birthday,presence;
-    cout << "Please enter Id : " << endl;cout.flush();
+    cout << "Please enter Id : ";cout.flush();
     cin >> id;
-    cout << "Please enter name : " << endl;cout.flush();
+    cout << "Please enter name : ";cout.flush();
     cin >> name;
-    cout << "Please enter surname : "<< endl;cout.flush();
+    cout << "Please enter surname : ";cout.flush();
     cin >> surname;
-    cout << "Please enter birtday : "<< endl;cout.flush();
+    cout << "Please enter birtday : ";cout.flush();
     cin >> birthday;
     cout << "Please enter 1 or 0 if present or not : ";cout.flush();
     cin >> presence;
@@ -167,8 +167,7 @@ void * CommandBuilder(string Command, string Attribute, int *lenght){
     bytes[2] = (size >> 8) & 0xFF;
     bytes[3] = size & 0xFF;
 
-    strcpy(str,"aaaa"); //Put for empty share inside the str
-    strcat(str,",");
+    strcpy(str+2,"aaaa"); //Put for empty share inside the str
     strcat(str,Attribute.c_str());
  
     memcpy(str+2,bytes,sizeof(bytes)); //Put brut int inside the tcp packet
