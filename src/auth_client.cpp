@@ -64,7 +64,7 @@ void AddCustomer(int sock){
     cout<< "---------------------------------------------------------------------------"<< endl;
     cout<< "-------Add Customers-------------------------------------------------------"<< endl;
     cout<< "---------------------------------------------------------------------------"<< endl<<endl;
-    string id,name,surname,birthday,presence;
+    string id,name,surname,day,month,year,presence;
     cout << "Please enter Id : ";cout.flush();
     cin >> id;
     cout << "Please enter name : ";cout.flush();
@@ -72,16 +72,17 @@ void AddCustomer(int sock){
     cout << "Please enter surname : ";cout.flush();
     cin >> surname;
     cout << "Please enter birtday : ";cout.flush();
-    cin >> birthday;
+    cout << "d : ";cout.flush();
+    cin >> day;
+    cout << "m : ";cout.flush();
+    cin >> month;
+    cout << "y : ";cout.flush();
+    cin >> year;
     cout << "Please enter 1 or 0 if present or not : ";cout.flush();
     cin >> presence;
-    //Forge the string to send
-    // int stringsize = sizeof("PD,"+id+','+name+','+surname+','+birthday+','+presence) + sizeof(int);
-    // string buff = "PD,"+stringsize+','+id+','+name+','+surname+','+birthday+','+presence;
-    // send(sock, buff.c_str(), buff.length(), 0);
     string Command = "PC"; //Post Customer
     int lenght;
-    void *buff = CommandBuilder(Command,string(id+','+name+','+surname+','+birthday+','+presence),lenght);
+    void *buff = CommandBuilder(Command,string(id+','+name+','+surname+','+day+','+ month+','+ year+','+presence),lenght);
     send(sock, buff ,lenght,0);
 }
 
@@ -93,21 +94,18 @@ void DeleteCustomer(int sock)
     string id;
     cout << "Please enter Id : " << endl;cout.flush();
     cin >> id;
-    int stringsize = sizeof("rd"+id);
-    string buff = "RD"+','+ to_string(stringsize) +','+id;
-    send(sock,buff.c_str(),buff.length(),0);
+    int lenght;
+    void *buff = CommandBuilder("RD",id,lenght);
+    send(sock,buff,lenght,0);
 }
 void ShowCustomerList(int sock)
 {
     cout<< "---------------------------------------------------------------------------"<< endl;
     cout<< "-------Show the customer List----------------------------------------------"<< endl;
     cout<< "---------------------------------------------------------------------------"<< endl<<endl;
-    string id;
-    //TODO fix this string
-    int stringsize = (sizeof("Gd,,all")+sizeof(int));
-    string buff;
-    buff = "GD," + stringsize + string(",all");
-    send(sock, buff.c_str(), buff.length(), 0);
+    int lenght;
+    void * buff = CommandBuilder("GD",string("all"),lenght);
+    send(sock, buff, lenght, 0);
 }
 int Connect(int  sock,bool connected)
 {

@@ -14,14 +14,14 @@ using  namespace std;
 class Customers
 {
     private:
-    list<Customer> customers;
+    vector<Customer> customers;
     //Files
     fstream data_file;
     //Encapsulated files interaction
     void save_insert(string);
     void save_delete(string);
     void eraseFileLine(string);
-    void eras();
+    void erase();
 
     public:
     Customers();
@@ -38,15 +38,12 @@ class Customers
 
 
     //Custom interaction with files IO
-    void get(string);
+    Customer get(int);
+    Customer get(string);
     void insert(Customer);
-    void modify(Customer,Customer);
-    void remove(Customer);
-
-
-    //Find Customer in memory
-    Customer findCustomer(string);
-
+    void modify(string,Customer);
+    void remove(string);
+    int size();
 
     //Load from files
     void load();

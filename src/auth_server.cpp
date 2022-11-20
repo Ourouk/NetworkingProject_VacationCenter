@@ -19,7 +19,7 @@
     void getData(vector<string>,Customers,int);
     void postData(vector<string>,Customers,int);
     void removeData(vector<string>,Customers,int);
-    void postIdentification(vector<string>,Customers,int);
+    bool postIdentification(vector<string>,Customers,int);
     void dontKnowWhatToDo(vector<string>,Customers,int);
 
 int main(int argc,char* argv[])
@@ -81,9 +81,10 @@ int main(int argc,char* argv[])
         cout<<"Connection Made on socket nbr " << new_socket<<endl;cout.flush();
 
     //Prepare the main loop
-        vector<string> properties_buff;
+    vector<string> properties_buff;
     CommandReader(new_socket,properties_buff);
     postIdentification(properties_buff,Customers,new_socket);
+    properties_buff.clear();
     while(CommandReader(new_socket,properties_buff))
     {
         CommandDispatcher(properties_buff,Customers,new_socket);
@@ -116,18 +117,20 @@ void CommandDispatcher(vector<string> s,Customers c,int socket)
         cout<<"RC";cout.flush();
         removeData(s,c,socket);
     }
-    //GetData >> GD,customer.to_string()
-    else if (!strcmp((s[0]).c_str(), "PI"))
-    {
-        cout<<"PI";cout.flush();
-        
-    }  
 }
 
-
-
 void getData(vector<string> s,Customers c,int socket){
+    //Handle the ID all
+    if(s[1].compare("all") == 0)
+    {
+        for(int i=0;i != c.size();i++)
+        {
+            
+        }
+    }else{
+        Customer c_buff = c.get(s[1]);
 
+    }
 }
 void postData(vector<string> s,Customers c,int socket){
 
@@ -135,7 +138,7 @@ void postData(vector<string> s,Customers c,int socket){
 void removeData(vector<string> s,Customers c,int socket){
 
 }
-void postIdentification(vector<string> s,Customers c,int socket){
+bool postIdentification(vector<string> s,Customers c,int socket){
     string command_buff ;
     int lenght;
     void * buff;
@@ -148,6 +151,7 @@ void postIdentification(vector<string> s,Customers c,int socket){
             perror("Send");
             exit(EXIT_FAILURE);
         }
+        return 0;
     }else
     {
         command_buff = "E";
@@ -157,5 +161,6 @@ void postIdentification(vector<string> s,Customers c,int socket){
             perror("Send");
             exit(EXIT_FAILURE);
         }
+        return 1;
     }
 }

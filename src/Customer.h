@@ -2,6 +2,15 @@
 #define CUSTOMER
 #include <iostream>
 #include <ctime>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <climits>
+#include <malloc.h>
+#include <sstream>
+#include <vector>
 
 using namespace std;
     class Customer 
@@ -18,6 +27,7 @@ using namespace std;
 
         public:
             Customer();
+            Customer(string,string,string,int_fast8_t,int_fast8_t,int,bool);
             Customer(string);
             ~Customer();
             //Getter

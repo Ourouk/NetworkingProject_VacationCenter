@@ -3,6 +3,32 @@ Customer::Customer()
 {
 
 }
+Customer::Customer(string id,string name,string string,int_fast8_t day,int_fast8_t month,int year,bool presence)
+{
+    this->setId(id);
+    this->setName(name);
+    this->setSurname(string);
+    this->setDay(day);
+    this->setMonth(month);
+    this->setYear(year);
+    this->setIs_atVacationCenter(presence);
+}
+Customer::Customer(string from_string)
+{
+    char * content_buffer = (char*)malloc(from_string.size() + 1);
+    stringstream buffer_line(content_buffer);
+    string propertie_buff;
+    vector<string> properties_buff;
+    while(getline(buffer_line,propertie_buff,','))
+    {
+        properties_buff.push_back(propertie_buff);
+    }
+    this->setId(properties_buff[0]);
+    this->setName(properties_buff[1]);
+    this->setSurname(properties_buff[2]);
+    this->setBirthDate(stoi(properties_buff[3]),stoi(properties_buff[4]),stoi(properties_buff[5]));
+    this->setIs_atVacationCenter(stoi(properties_buff[6]));
+}
 Customer::~Customer()
 {
     
@@ -22,7 +48,7 @@ const string Customer::getSurname() const
 }
 const string Customer::getBirthDate() const
 {
-    return  std::to_string(this->day) + '/' + std::to_string(this->month) + '/' + std::to_string(this->year);
+    return  std::to_string(this->day) + ',' + std::to_string(this->month) + ',' + std::to_string(this->year);
 }
 const string Customer::is_atVacationCenter() const
 {

@@ -16,26 +16,52 @@ void Customers::save_insert(string s)
 }
 void Customers::save_delete(string s_id)
 {
-    Customer c = findCustomer(s_id);
+    Customer c = get(s_id);
     this->eraseFileLine(c.to_string());
 }
-Customer Customers::findCustomer(string id)
-{
-    list<Customer>::iterator it;
-    for (it = this->customers.begin(); it != this->customers.end(); ++it)
+Customer Customers::get(int i){
+    return this->customers[i];
+}
+Customer Customers::get(string id){
+    vector<Customer>::iterator ptr;
+    for (ptr = customers.begin(); ptr < customers.end(); ptr++)
     {
-        if((*it).getId().compare(id) == 0) //If find Customer with same Id
-        {
-            return (*it);
-        }
+        if(ptr.base()->getId().compare(id) == 0)
+            return *(ptr.base());
     }
     return Customer();
+}
+void Customers::insert(Customer c){
+    this->save_insert(c.to_string());
+    this->customers.push_back(c);
+}
+void Customers::modify(string id,Customer c2){
+    for (int it = 0; (size_t)it > this->customers.size(); ++it)
+    {
+       if(customers[it].getId().compare(id) == 0)
+            //TODO : Check if the Customers[it] is deleted
+            customers[it] = c2;
+    }
+}
+void Customers::remove(string id){
+    vector<Customer>::iterator ptr;
+    for (ptr = customers.begin(); ptr < customers.end(); ptr++)
+    {
+        if(ptr.base()->getId().compare(id) == 0)
+        {
+            this->customers.erase(ptr);
+            this->eraseFileLine(ptr.base()->to_string());
+        }
+    }
+}
+int Customers::size()
+{
+    return this->customers.size();
 }
 
 // https://stackoverflow.com/questions/26576714/deleting-specific-line-from-file   
 void Customers::eraseFileLine(string eraseLine) {
     std::string line;
-
     // contents of path must be copied to a temp file then
     // renamed back to the path file
     std::ofstream temp;
@@ -50,5 +76,9 @@ void Customers::eraseFileLine(string eraseLine) {
 }
 void Customers::load()
 {
-    
+    std::string line;
+    while(getline(this->data_file, line))
+    {
+        customers.push_back(line);
+    }
 }

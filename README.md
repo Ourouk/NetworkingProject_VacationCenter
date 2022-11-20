@@ -1,4 +1,7 @@
 # Projet Camp de Vacance
+## Special storing CustomerID
+all
+start
 ## Protocol Specification
 | Protocol Command | PacketSize | Attributes |
 ### GetCustomer
