@@ -13,6 +13,7 @@
 //Standart object
 #include "Customer.h"
 #include "Customers.h"
+#include "Command.h"
 
 using namespace std;
 
@@ -20,11 +21,10 @@ int CreateSocket();
 void AddCustomer(int);
 void DeleteCustomer(int);
 void ShowCustomerList(int);
-int Connect(int);
-void Disconnect(int,int);
-int Menu();
-void* CommandBuilder(string, string, int * );
-vector<string> command_reader(string[],Customers,int);
+int Connect(int,bool);
+void Disconnect(int,int,bool);
+int Menu(bool);
+// void* CommandBuilder(string, string, int * );
 
 
 int main(int argc,char* argv[])
@@ -32,26 +32,24 @@ int main(int argc,char* argv[])
     int client_fd;
     int socket = CreateSocket();
     int choix;
-    bool fini = false;
+    bool fini = false,connected = false;
     while(!fini)
     {
         if (argc == 2) { choix = atoi(argv[1]); fini = true; }
-        else choix = Menu();
+        else choix = Menu(connected);
         switch(choix)
         {
             case 1 : AddCustomer(socket); break;
             case 2 : AddCustomer(socket); break;
             case 3 : DeleteCustomer(socket); break;
             case 4 : ShowCustomerList(socket); break;
-            case 5 : client_fd = Connect(socket); break;
-            case 6 : Disconnect(socket,client_fd); break;
+            case 5 : client_fd = Connect(socket,connected); break;
+            case 6 : Disconnect(socket,client_fd,connected); break;
             default : fini = true ; break;
         }
     }
     return 0;
 }
-
-
 int CreateSocket()
 {
   int sock;
@@ -82,9 +80,9 @@ void AddCustomer(int sock){
     // string buff = "PD,"+stringsize+','+id+','+name+','+surname+','+birthday+','+presence;
     // send(sock, buff.c_str(), buff.length(), 0);
     string Command = "PC"; //Post Customer
-    int *lenght;
+    int lenght;
     void *buff = CommandBuilder(Command,string(id+','+name+','+surname+','+birthday+','+presence),lenght);
-    send(sock, buff ,*lenght,0);
+    send(sock, buff ,lenght,0);
 }
 
 void DeleteCustomer(int sock)
@@ -111,7 +109,7 @@ void ShowCustomerList(int sock)
     buff = "GD," + stringsize + string(",all");
     send(sock, buff.c_str(), buff.length(), 0);
 }
-int Connect(int  sock)
+int Connect(int  sock,bool connected)
 {
     struct sockaddr_in sockaddr;
     string ip,port;
@@ -138,77 +136,49 @@ int Connect(int  sock)
         perror("Connection failed");
         exit(EXIT_FAILURE);
     }
-    return client_fd;
 
     //Post Authentication
     cout<< "---------------------------------------------------------------------------"<< endl;
     cout<< "-------Login---------------------------------------------------------------"<< endl;
     cout<< "---------------------------------------------------------------------------"<< endl<<endl;
     string login,password;
-    cout << "Please enter Id : " << endl;cout.flush();
+    cout << "Please enter Id : ";cout.flush();
     cin >> login;
-    cout << "Please enter name : " << endl;cout.flush();
+    cout << "Please enter name : ";cout.flush();
     cin >> password;
-    int *lenght;
+    int lenght;
     void *buff = CommandBuilder(string("PI"),string(login +',' + password),lenght);
-    send(sock,buff,*lenght, 0);
-    
+    send(sock,buff,lenght, 0);
+    vector<string> Properties;
+    if(CommandReader(sock,Properties) == 0)
+        exit(EXIT_FAILURE);
+    if(Properties[0].compare("GR") == 0)
+        if(Properties[1].compare("S") == 0)
+            connected = true;
+        else
+        {
+            connected = false;
+        }
+    else{
+        connected = false;
+    }
+    if(connected)
     cout<< "-----------------You're connected------------------------------------------"<< endl;
+    return client_fd;
 }
-void * CommandBuilder(string Command, string Attribute, int *lenght){
-    int size = Command.length() + sizeof(int) + ',' + Attribute.length() + sizeof('\0');
-    char* str = (char *)malloc(size);
-    strcpy(str,Command.c_str());
 
-    //These lines write the int as 4 char
-    char bytes[4];
-    bytes[0] = (size >> 24) & 0xFF;
-    bytes[1] = (size >> 16) & 0xFF;
-    bytes[2] = (size >> 8) & 0xFF;
-    bytes[3] = size & 0xFF;
-
-    strcpy(str+2,"aaaa"); //Put for empty share inside the str
-    strcat(str,Attribute.c_str());
- 
-    memcpy(str+2,bytes,sizeof(bytes)); //Put brut int inside the tcp packet
-    *lenght = size;
-    return str;
-}
-vector<string> command_reader(string s[],Customers c,int socket)
-{
-    //GetData >> GD,customer.to_string()
-    if (!strcmp(s[0].c_str(), "GD"))
-    {
-        cout<<"GC";cout.flush();
-    }
-    //GetData >> GD,customer.to_string()    
-    else if (!strcmp(s[0].c_str(), "PD"))
-    {
-        cout<<"PC";cout.flush();
-    }
-    //GetData >> GD,customer.to_string()
-    else if (!strcmp(s[0].c_str(), "RD"))
-    {
-        cout<<"RC";cout.flush();
-    }
-    //GetData >> GD,customer.to_string()
-    else if (!strcmp(s[0].c_str(), "PI"))
-    {
-        cout<<"PI";cout.flush();
-    }  
-}
-void Disconnect(int sock, int client_fd)
+void Disconnect(int sock, int client_fd, bool connected )
 {
     close(client_fd);
     cout<< "-----------------You're disconnected---------------------------------------"<< endl;
 }
 
-int Menu()
+int Menu(bool connected)
 {
   cout << endl;
   cout << "---------------------------------------------------------------------------" << endl;
   cout << "--- Gestionnaire de Centre de Vacances-------------------------------------" << endl;
-  cout << "----Please be connected before using features------------------------------" << endl;
+  cout << "----Please be connected before using features------------"<< "connected :" << connected << endl;
   cout << " 1. Ajouts de vacancier" << endl;
   cout << " 2. Modification de vacancier" << endl;
   cout << " 3. Suppression de vacancier" << endl;
