@@ -133,10 +133,10 @@ void getData(vector<string> s,Customers c,int socket){
     }
 }
 void postData(vector<string> s,Customers c,int socket){
-
+    c.insert(Customer(s[1],s[2],s[3],stoi(s[4]),stoi(s[5]),stoi(s[6]),stoi(s[7])));
 }
 void removeData(vector<string> s,Customers c,int socket){
-
+    c.remove(s[1]);
 }
 bool postIdentification(vector<string> s,Customers c,int socket){
     string command_buff ;

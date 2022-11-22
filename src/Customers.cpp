@@ -1,18 +1,19 @@
 #include "Customers.h"
 Customers::Customers()
 {
-    data_file.open("data.csv",ios::in | ios::out | ios::app);
+    data_file.open("data.csv");
 }
 Customers::Customers(const Customers& c){
     this->customers = c.customers;
+    data_file.open("data.csv");
 }
 Customers::~Customers()
 {
-    data_file.close();
+   this->data_file.close();
 }
 void Customers::save_insert(string s)
 {
-    data_file.write(s.c_str() + '\n',s.length()+sizeof('\n'));
+    data_file<<s.c_str()<<endl;
 }
 void Customers::save_delete(string s_id)
 {

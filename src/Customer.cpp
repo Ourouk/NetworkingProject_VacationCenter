@@ -104,6 +104,6 @@ void Customer::setIs_atVacationCenter(string atvacationcenter)
 string Customer::to_string()
 {
     //Create the string in csv format
-    return this->getId() + ',' + this->getName() + ',' + this->getSurname() + ',' + this->getName() + ',' + this->getBirthDate() + ',' + this->is_atVacationCenter();
+    return string(this->getId() + ',' + this->getName() + ',' + this->getSurname() + ',' + this->getName() + ',' + this->getBirthDate() + ',' + this->is_atVacationCenter());
 }
 // bool Customer::operator==(Customer const c1,Customer const c2)

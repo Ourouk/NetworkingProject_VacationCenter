@@ -65,10 +65,26 @@ bool CommandReader(int new_socket,vector<string> & properties_buff){
     return 1;
 }
 //New way to handle whole reciev using flag instead of complex partial data recovery
+// int recv_expectedLenght(int sock,char * dest, int expected_size)
+// {
+//     return recv(sock,dest,expected_size,MSG_WAITALL);
+//      #ifdef DEBUG
+//         cout << dest;
+//         #endif
+// }
 int recv_expectedLenght(int sock,char * dest, int expected_size)
 {
-    return recv(sock,dest,expected_size,MSG_WAITALL);
-     #ifdef DEBUG
-        cout << dest;
-        #endif
+    int i =0;char* buf = (char*)malloc(expected_size);
+    int size;
+    while(i < expected_size - 1)
+    {
+        if((size = read(sock,buf+i,expected_size - i)) == -1)
+        {
+            perror("recv");
+            exit(EXIT_FAILURE);
+        }
+        memcpy(dest+i,buf,size);
+        i =+ size;
+    }
+    return 1;
 }
