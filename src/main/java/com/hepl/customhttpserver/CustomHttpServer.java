@@ -19,9 +19,10 @@ public class CustomHttpServer {
         {
             System.out.println("Launching Custom Http Server made in Java");
             //It is to note that the listener can launch itself some thread
-            http_listening_thread listener_thread = new http_listening_thread(8080);
-            ExecutorService executor_listener = Executors.newFixedThreadPool(1);
-            executor_listener.execute(listener_thread);
+            http_listening_thread listener_thread = new http_listening_thread(8090);
+            listener_thread.run();
+                //ExecutorService executor_listener = Executors.newFixedThreadPool(1);
+            //executor_listener.execute(listener_thread);
         }
     }
 }
