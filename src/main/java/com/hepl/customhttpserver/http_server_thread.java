@@ -102,6 +102,7 @@ public class http_server_thread implements Runnable{
     }
     public void NOTSUPPORTEDdhandler(String command,DataOutputStream out) throws IOException
     {
-         out.write(Files.readAllBytes(Paths.get(WEB_ROOT.getPath(), METHOD_NOT_SUPPORTED)));
+        http_response_builder http_response_builder = new http_response_builder(Files.readAllBytes(Paths.get(WEB_ROOT.getPath(), METHOD_NOT_SUPPORTED)));
+        http_response_builder.send(out);
     }
 }
