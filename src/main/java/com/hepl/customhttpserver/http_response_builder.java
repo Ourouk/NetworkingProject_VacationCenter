@@ -32,15 +32,9 @@ public class http_response_builder {
     public void send(DataOutputStream o) throws IOException
     {
         o.write((this.getVersion() + " " + this.getCode() + " " + this.getHumand_readable_code() + "\r\n").getBytes());
-        System.out.println(this.getVersion() + " " + this.getCode() + " " + this.getHumand_readable_code() + "\r\n");
         o.write((this.getContent_type() +  "\r\n").getBytes());
         o.write(("Content-Lenght: " + this.getSize() + "\r\n\r\n").getBytes());
-        System.out.println(this.getContent_type() + " " + this.getSize() + "\r\n\r\n");
         o.write(this.getContent());
-        System.out.println(this.getContent());
-        o.write("\r\n\r\n".getBytes());
-        System.out.println("\r\n\r\n");
-        o.flush();
     }
     /**e
      * @return the version
@@ -111,7 +105,7 @@ public class http_response_builder {
     //TODO Check if the size given is right, i don't know if respond caracters should be counted
     public void setSize(int size) {
         //NOTE : This is to count for the /r/n at the end of the http packet
-        this.size = size - 100 ;
+        this.size = size;
     }
 
     /**

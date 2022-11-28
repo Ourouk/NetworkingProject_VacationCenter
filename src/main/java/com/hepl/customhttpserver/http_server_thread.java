@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  */
 public class http_server_thread implements Runnable{
     private Socket socket = null;
-    private DataInputStream input = null;
+    private BufferedReader input = null;
     private DataOutputStream output = null;
     
     static final File WEB_ROOT = new File("www");
@@ -40,17 +40,17 @@ public class http_server_thread implements Runnable{
     @Override
     public void run() {
         try {
-            input = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            String s;
-            while((s = input.readLine()) != null)
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String s;int i = 0;
+            while(!(s = input.readLine()).isEmpty())
             {
-                if(!s.isEmpty()) //
+                if(i==0)
                 {
-                    //Initial Parsing of the request
-                        StringTokenizer parse = new StringTokenizer(s);
-                        String method = parse.nextToken().toUpperCase(); // we get the HTTP method of the client
-                        String fileRequested = parse.nextToken().toLowerCase(); // we get file requested
-                        String HTTPversion = parse.nextToken().toLowerCase(); //Version of the protocl
+                //Initial Parsing of the request
+                    StringTokenizer parse = new StringTokenizer(s);
+                    String method = parse.nextToken().toUpperCase(); // we get the HTTP method of the client
+                    String fileRequested = parse.nextToken().toLowerCase(); // we get file requested
+                    String HTTPversion = parse.nextToken().toLowerCase(); //Version of the protocl
                     this.output = new DataOutputStream(this.socket.getOutputStream());
                     switch(method)
                     {
@@ -71,12 +71,15 @@ public class http_server_thread implements Runnable{
                             this.NOTSUPPORTEDdhandler(fileRequested,output);
                             break;
                     }
-                    output.flush();
                 }
+             i++;
             }
-            }catch (IOException ex) {
-                Logger.getLogger(http_server_thread.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            output.flush();
+            socket.close();
+            
+        }catch (IOException ex) {
+            Logger.getLogger(http_server_thread.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     public void GEThandler(String command,DataOutputStream out) throws FileNotFoundException, IOException
     {

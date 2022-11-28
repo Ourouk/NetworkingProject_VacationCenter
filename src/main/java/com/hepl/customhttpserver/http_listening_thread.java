@@ -30,9 +30,8 @@ public class http_listening_thread implements Runnable{
 
     @Override
     public void run() {
-       Boolean finished = false;
-       ExecutorService executor_reader = Executors.newFixedThreadPool(1);
-       while(!finished)
+       ExecutorService executor_reader = Executors.newFixedThreadPool(2);
+       while(true)
        {
            //Launch New thread for each connections
            try {

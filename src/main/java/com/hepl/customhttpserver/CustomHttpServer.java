@@ -21,8 +21,6 @@ public class CustomHttpServer {
             //It is to note that the listener can launch itself some thread
             http_listening_thread listener_thread = new http_listening_thread(8090);
             listener_thread.run();
-                //ExecutorService executor_listener = Executors.newFixedThreadPool(1);
-            //executor_listener.execute(listener_thread);
         }
     }
 }
