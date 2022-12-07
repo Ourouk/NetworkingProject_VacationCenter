@@ -16,9 +16,10 @@ Customer::Customer(string id,string name,string string,int_fast8_t day,int_fast8
 Customer::Customer(string from_string)
 {
     char * content_buffer = (char*)malloc(from_string.size() + 1);
+    strcpy(content_buffer,from_string.c_str());
     stringstream buffer_line(content_buffer);
     string propertie_buff;
-    vector<string> properties_buff;
+    vector<string> properties_buff = vector<string>();
     while(getline(buffer_line,propertie_buff,','))
     {
         properties_buff.push_back(propertie_buff);
@@ -26,7 +27,7 @@ Customer::Customer(string from_string)
     this->setId(properties_buff[0]);
     this->setName(properties_buff[1]);
     this->setSurname(properties_buff[2]);
-    this->setBirthDate(stoi(properties_buff[3]),stoi(properties_buff[4]),stoi(properties_buff[5]));
+    this->setBirthDate(stoi(properties_buff[3].c_str()),stoi(properties_buff[4].c_str()),stoi(properties_buff[5].c_str()));
     this->setIs_atVacationCenter(stoi(properties_buff[6]));
 }
 Customer::~Customer()
@@ -93,7 +94,7 @@ void Customer::setYear(int y)
 }
 void Customer::setIs_atVacationCenter(bool presentVacation)
 {
-    this->atVacationCenter = presentVacation;
+    this->atVacationCenter = '0' + presentVacation;
 }
 
 void Customer::setIs_atVacationCenter(string atvacationcenter)
@@ -104,6 +105,6 @@ void Customer::setIs_atVacationCenter(string atvacationcenter)
 string Customer::to_string()
 {
     //Create the string in csv format
-    return string(this->getId() + ',' + this->getName() + ',' + this->getSurname() + ',' + this->getName() + ',' + this->getBirthDate() + ',' + this->is_atVacationCenter());
+    return string(this->getId() + ',' + this->getName() + ',' + this->getSurname()  + ',' + this->getBirthDate() + ',' + this->is_atVacationCenter());
 }
 // bool Customer::operator==(Customer const c1,Customer const c2)

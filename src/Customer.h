@@ -19,7 +19,6 @@ using namespace std;
             string id;
             string name;
             string surname;
-            string birthDate;
             string atVacationCenter;
             //Birth date
             int_fast8_t day,month;

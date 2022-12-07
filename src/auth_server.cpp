@@ -16,7 +16,7 @@
 //Function Declaration
     int recv_expectedLenght(int ,char * , int);
     void CommandDispatcher(vector<string>,Customers,int);
-    void getData(vector<string>,Customers,int);
+    void getCustomer(vector<string>,Customers,int);
     void postData(vector<string>,Customers,int);
     void removeData(vector<string>,Customers,int);
     bool postIdentification(vector<string>,Customers,int);
@@ -99,11 +99,11 @@ int main(int argc,char* argv[])
 //Dispatch Command to Real Function present on the auth server and client
 void CommandDispatcher(vector<string> s,Customers c,int socket)
 {
-    //GetData >> GD,customer.to_string()
+    //GetCustomer >> GC,customer.to_string()
     if (!strcmp((s[0]).c_str(), "GC"))
     {
         cout<<"GC";cout.flush();
-        getData(s,c,socket);
+        getCustomer(s,c,socket);
     }
     //GetData >> GD,customer.to_string()
     else if (!strcmp((s[0]).c_str(), "PC"))
@@ -119,7 +119,7 @@ void CommandDispatcher(vector<string> s,Customers c,int socket)
     }
 }
 
-void getData(vector<string> s,Customers c,int socket){
+void getCustomer(vector<string> s,Customers c,int socket){
     //Handle the ID all
     if(s[1].compare("all") == 0)
     {
@@ -129,7 +129,12 @@ void getData(vector<string> s,Customers c,int socket){
         }
     }else{
         Customer c_buff = c.get(s[1]);
-
+        int lenght;
+        if ( send(socket, CommandBuilder("",c_buff.to_string(),lenght),lenght, 0) == -1)
+        {
+            perror("Send");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 void postData(vector<string> s,Customers c,int socket){

@@ -101,11 +101,18 @@ void DeleteCustomer(int sock)
 void ShowCustomerList(int sock)
 {
     cout<< "---------------------------------------------------------------------------"<< endl;
-    cout<< "-------Show the customer List----------------------------------------------"<< endl;
+    cout<< "-------Show A customer Information-----------------------------------------"<< endl;
     cout<< "---------------------------------------------------------------------------"<< endl<<endl;
     int lenght;
-    void * buff = CommandBuilder("GD",string("all"),lenght);
+    string id;
+    cout << "Please enter Id : " << endl;cout.flush();
+    cin >> id;
+    void * buff = CommandBuilder("GC",id,lenght);
     send(sock, buff, lenght, 0);
+    vector<string> s;
+    if(CommandReader(sock,s) == 0)
+        exit(EXIT_FAILURE);
+    cout << (Customer(s[1],s[2],s[3],stoi(s[4]),stoi(s[5]),stoi(s[6]),stoi(s[7]))).to_string();
 }
 int Connect(int  sock,bool connected)
 {
@@ -180,7 +187,7 @@ int Menu(bool connected)
   cout << " 1. Ajouts de vacancier" << endl;
   cout << " 2. Modification de vacancier" << endl;
   cout << " 3. Suppression de vacancier" << endl;
-  cout << " 4. Listes des vacanciers" << endl;
+  cout << " 4. Info vacanciers" << endl;
   cout << " 5. Connect" << endl;
   cout << " 6. Disconnect" << endl;
   cout << " 7. Exit" << endl ;
