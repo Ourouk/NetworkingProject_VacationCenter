@@ -1,0 +1,16 @@
+version: '3'
+services:
+  postgres-activities:
+    build: ./postgreSQL.dockerfile
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+      
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5051:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@baeldung.com
+      - PGADMIN_DEFAULT_PASSWORD=baeldung

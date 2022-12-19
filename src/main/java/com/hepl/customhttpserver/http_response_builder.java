@@ -4,8 +4,10 @@
  */
 package com.hepl.customhttpserver;
 
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 /**
  *
@@ -27,14 +29,18 @@ public class http_response_builder {
         this.setVersion("HTTP/1.1");
         this.setCode(200);
         this.setHumand_readable_code("ok");
-        this.setContent_type("text/html charset=utf-8");
+        this.setContent_type("Content-Type: text/html; charset=utf-8");
     }
     public void send(DataOutputStream o) throws IOException
     {
-        o.write((this.getVersion() + " " + this.getCode() + " " + this.getHumand_readable_code() + "\r\n").getBytes());
-        o.write((this.getContent_type() +  "\r\n").getBytes());
-        o.write(("Content-Lenght: " + this.getSize() + "\r\n\r\n").getBytes());
-        o.write(this.getContent());
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
+        out.write(this.getVersion() + " " + this.getCode() + " " + this.getHumand_readable_code() + "\r\n");
+        out.write(this.getContent_type() +"\r\n");
+        out.write("Content-Length: " + this.getSize() + "\r\n\r\n");
+        for (byte b : this.getContent()) {
+            out.append((char)b);
+        }
+        out.flush();
     }
     /**e
      * @return the version
@@ -82,7 +88,7 @@ public class http_response_builder {
      * @return the content_type
      */
     public String getContent_type() {
-        return content_type;
+        return  content_type;
     }
 
     /**

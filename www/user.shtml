@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Hello!</title>
+    </head>
+    <body>
+        <h1>Welcome to Vacation Center Manager!</h1>
+        <p>Select Activities you want to participate to :</p>
+            <!-- Add Here all available Activities -->
+    </body>
+</html>

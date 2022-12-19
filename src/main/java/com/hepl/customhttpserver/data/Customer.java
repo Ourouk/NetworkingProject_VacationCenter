@@ -19,10 +19,15 @@ public class Customer {
     {
         
     }
-    //Construct From_string a Customer
-    public Customer(String s)
-    {
-        
+
+    public Customer(String string, String string0, String string1, Integer integer, Integer integer0, Integer integer1, Integer integer2) {
+        this.setId(string);
+        this.setName(string0);
+        this.setSurname(string1);
+        this.setDay(integer);
+        this.setMonth(integer0);
+        this.setYear(integer1);
+        this.atVacationCenter = (integer2 == 1);
     }
     //Encapsulation
     /**
