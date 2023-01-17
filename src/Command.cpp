@@ -15,7 +15,7 @@ void * CommandBuilder(string Command, string Attribute_in, int &lenght){
     } else {
         aes_imposed_size = Attribute_in.length() + 16;
         for (int i = 0; i < aes_imposed_size - Attribute_in.length(); i++) {
-            Attribute_in += " ";
+            Attribute_in += "\0"; //Empty char
         }
     }
     u_int8_t* Attribute = (u_int8_t*)malloc(aes_imposed_size);
@@ -25,7 +25,8 @@ void * CommandBuilder(string Command, string Attribute_in, int &lenght){
     encrypt_string(Attribute,key);
 
     //Formating the command type inside
-    int size = Command.length() + sizeof(int) + aes_imposed_size;
+    //int size = Command.length() + sizeof(int) + aes_imposed_size;
+    int size = 6 + aes_imposed_size; //Should be the same ...
     char* str = (char *)malloc(size);
     memcpy(str,Command.c_str(),2);
 
@@ -36,11 +37,12 @@ void * CommandBuilder(string Command, string Attribute_in, int &lenght){
     bytes[2] = (size >> 8) & 0xFF;
     bytes[3] = size & 0xFF;
 
-    //Formating the attribute size
+    //Formatting the attribute size
     memcpy(str+2,bytes,sizeof(bytes)); 
-    //Formating the Encrypted attribute
-    memcpy(str+6,(char*)Attribute,Attribute_in.length());
-    
+    //Formatting the Encrypted attribute the size respect the padding.
+    memcpy(str+6,(char*)Attribute,aes_imposed_size);
+
+    //Communicate the size of the byte array to be sent
     lenght = size;
 
     //Note the message doesn't contain the '\0' char
@@ -53,7 +55,7 @@ bool CommandReader(int new_socket,vector<string> & properties_buff){
         if(recv_expectedLenght(new_socket,command_type_buffer,2 * sizeof(char)) == 0)
             return 0;
     //Convert the raw Command values to a proper string
-        command_type_buffer[2] = '\0';
+        //command_type_buffer[2] = '\0'; This is legacy code should be updated ...
     //Add the command string to dispatch correctly to a functions
         properties_buff.push_back(command_type_buffer);
     //Read the Command size
@@ -67,7 +69,7 @@ bool CommandReader(int new_socket,vector<string> & properties_buff){
             + ((command_size_buffer[1] << 16) & 0xFF) 
             +  ((command_size_buffer[2] << 8) & 0xFF) 
             +  ((command_size_buffer[3]) & 0xFF);
-        int command_size_without_header = command_size - sizeof(int) - 2; //Header Contain two char followed by a int
+        int command_size_without_header = command_size - 6 ;//sizeof(int) - 2; //Header Contain two char followed by a int
     
     //Read the whole command
         char *command_content_buffer = (char*)malloc(command_size_without_header);
@@ -133,6 +135,7 @@ void decrypt_string(uint8_t* message, uint8_t* key) {
     }
     return 1;
 }*/
+
 int recv_expectedLenght(int sock, char *dest, int expected_size) {
     int bytes_received = 0;
     while (bytes_received < expected_size) {
