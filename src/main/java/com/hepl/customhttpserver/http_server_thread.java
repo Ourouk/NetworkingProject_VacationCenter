@@ -36,7 +36,7 @@
             {
                 System.out.println("Created Directory Containing HTML files");
             }
-            System.out.println(WEB_ROOT.getAbsolutePath());
+            System.out.println("New Request Received");
             this.socket = s;
         }
         @Override
@@ -114,7 +114,9 @@
         {
             //Parsing form return
             HashMap form_hashmap = new HashMap();
+            System.out.println(body_list);
             for (String line: body_list) {
+                System.out.println(line);
                 String[] split_key = line.split("=");
                 form_hashmap.put(split_key[0], split_key[1]);
             }

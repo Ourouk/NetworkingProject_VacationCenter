@@ -1,8 +1,33 @@
 #include "Command.h"
-void * CommandBuilder(string Command, string Attribute, int &lenght){
-    int size = Command.length() + sizeof(int) + ',' + Attribute.length() + sizeof('\0');
+
+
+
+//Global Key Variable Extremely Unsecure but for testing purpose
+uint8_t key[16] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F};
+
+//Build formatted Command and apply encryption to it.
+void * CommandBuilder(string Command, string Attribute_in, int &lenght){
+    //Encrypt Attribute before formatting the command
+    //Padding the Attribute to a multiple of 16 bc AES-128
+    int aes_imposed_size;
+    if (Attribute_in.length() % 16 == 0) {
+        aes_imposed_size = Attribute_in.length();
+    } else {
+        aes_imposed_size = Attribute_in.length() + 16;
+        for (int i = 0; i < aes_imposed_size - Attribute_in.length(); i++) {
+            Attribute_in += " ";
+        }
+    }
+    u_int8_t* Attribute = (u_int8_t*)malloc(aes_imposed_size);
+    //Copy the content without the '\0' char
+    memcpy((char*)Attribute,Attribute_in.c_str(),Attribute_in.length());
+    //Encrypt Attribute
+    encrypt_string(Attribute,key);
+
+    //Formating the command type inside
+    int size = Command.length() + sizeof(int) + aes_imposed_size;
     char* str = (char *)malloc(size);
-    strcpy(str,Command.c_str());
+    memcpy(str,Command.c_str(),2);
 
     //These lines write the int as 4 char
     char bytes[4];
@@ -11,11 +36,14 @@ void * CommandBuilder(string Command, string Attribute, int &lenght){
     bytes[2] = (size >> 8) & 0xFF;
     bytes[3] = size & 0xFF;
 
-    strcpy(str+2,"aaaa"); //Put for empty share inside the str
-    strcat(str,Attribute.c_str());
- 
-    memcpy(str+2,bytes,sizeof(bytes)); //Put brut int inside the tcp packet
+    //Formating the attribute size
+    memcpy(str+2,bytes,sizeof(bytes)); 
+    //Formating the Encrypted attribute
+    memcpy(str+6,(char*)Attribute,Attribute_in.length());
+    
     lenght = size;
+
+    //Note the message doesn't contain the '\0' char
     return str;
 }
 
@@ -39,12 +67,18 @@ bool CommandReader(int new_socket,vector<string> & properties_buff){
             + ((command_size_buffer[1] << 16) & 0xFF) 
             +  ((command_size_buffer[2] << 8) & 0xFF) 
             +  ((command_size_buffer[3]) & 0xFF);
-        int command_size_without_header = command_size - sizeof(int) - 2 + 1; //Header Contain two char followed by a int
+        int command_size_without_header = command_size - sizeof(int) - 2; //Header Contain two char followed by a int
     
     //Read the whole command
         char *command_content_buffer = (char*)malloc(command_size_without_header);
         if(recv_expectedLenght(new_socket,command_content_buffer,command_size_without_header) == 0)
             return 0;
+
+
+    //Decrypt command_content_buffer using AES-128
+    
+        decrypt_string((uint8_t*)command_content_buffer,(uint8_t*)key);
+
     //Parse the command inside a vector using separator ','
         stringstream buffer_line(command_content_buffer);
         string propertie_buff,line_buff;
@@ -64,15 +98,26 @@ bool CommandReader(int new_socket,vector<string> & properties_buff){
         free(command_content_buffer);
     return 1;
 }
-//New way to handle whole reciev using flag instead of complex partial data recovery
-// int recv_expectedLenght(int sock,char * dest, int expected_size)
-// {
-//     return recv(sock,dest,expected_size,MSG_WAITALL);
-//      #ifdef DEBUG
-//         cout << dest;
-//         #endif
-// }
-int recv_expectedLenght(int sock,char * dest, int expected_size)
+
+void encrypt_string(uint8_t* message, uint8_t* key) {
+    // Initialize AES context
+    struct AES_ctx ctx;
+    AES_init_ctx(&ctx, key);
+
+    // Encrypt the message
+    AES_ECB_encrypt(&ctx, message);
+}
+
+void decrypt_string(uint8_t* message, uint8_t* key) {
+    // Initialize AES context
+    struct AES_ctx ctx;
+    AES_init_ctx(&ctx, key);
+
+    // Decrypt the message
+    AES_ECB_decrypt(&ctx, message);
+}
+
+/*int recv_expectedLenght(int sock,char * dest, int expected_size)
 {
     int i =0;char* buf = (char*)malloc(expected_size);
     int size;
@@ -87,4 +132,19 @@ int recv_expectedLenght(int sock,char * dest, int expected_size)
         i =+ size;
     }
     return 1;
+}*/
+int recv_expectedLenght(int sock, char *dest, int expected_size) {
+    int bytes_received = 0;
+    while (bytes_received < expected_size) {
+        int result = recv(sock, dest + bytes_received, expected_size - bytes_received, 0);
+        if (result == -1) {
+            perror("recv");
+            return -1;
+        } else if (result == 0) {
+            printf("Connection closed by the remote host\n");
+            return -1;
+        }
+        bytes_received += result;
+    }
+    return bytes_received;
 }

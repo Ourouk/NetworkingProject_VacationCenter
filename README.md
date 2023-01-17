@@ -1,7 +1,5 @@
 # Projet Camp de Vacance
-## Special storing CustomerID
-all
-start
+
 ## Protocol Specification
 | Protocol Command | PacketSize | Attributes |
 Protocol command 2 byte
@@ -18,18 +16,22 @@ Attribute "Unlimited size" Attribute separated by ','
 ### GetResult
 | GR  PacketSize | Result |
 ## Auth_server
-
+This server implement all the mentioned protocol specification.
+He uses a pool of four thread to manage connection. The connection should be closed as quicly as possible by the client, to free mentionned client slot.
 ## Auth_Client
+This client implement all the mentioned protocol specification.
 
+The client provide : 
+- A Basic but functional Interface
 
 ## Website
 ### Index
 Contain a form to enter user
 ### User
-User info + Activies selector
+User info + Activities selector
 
 ### Activies Selected
-Congrulate the use to have made a choice
+Congratulate the use to have made a choice
 
 ### 404
 all content not found is redirected to that pages
@@ -52,6 +54,23 @@ Limitation: Can be used only once by file
 ### Communication with Auth_server
 Communicated with the server to check if the customer is available
 ### Communication with postgress
-Get the list of activities
+Get the list of activities from the server.
+## Docker
+I didn't want to have manage complex network configuration between virtual machine and the host. So I configured the postgresql server with docker.
+### Dockerfile
+#### Postgresql
+I use the dockerfile to :
+- Update the software on the docker
+- Add a default configuration file for empty servers
+#### Custom-made ones
+I copy compiled files inside the docker and then run them.
+- Auth_server
+Wrap the server in an ubuntu docker
+- Customhttpserver
+Wrap the java server in an ubuntu docker
+### DockerCompose
+I use it to launch the whole suit of programs 
+- Launch postgresql docker with data persistence.
+- Launch 
 
         

@@ -5,8 +5,6 @@
 
 package com.hepl.customhttpserver;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 /**
  *
  * @author Andrea
@@ -19,8 +17,11 @@ public class CustomHttpServer {
         {
             System.out.println("Launching Custom Http Server made in Java");
             //It is to note that the listener can launch itself some thread
-            http_listening_thread listener_thread = new http_listening_thread(8090);
+            int port = 8090;
+            http_listening_thread listener_thread = new http_listening_thread(port);
+            System.out.println("The server url is http://127.0.0.1:"+port);
             listener_thread.run();
+
         }
     }
 }

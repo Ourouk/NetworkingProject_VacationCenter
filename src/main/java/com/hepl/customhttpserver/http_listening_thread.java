@@ -30,13 +30,13 @@ public class http_listening_thread implements Runnable{
 
     @Override
     public void run() {
-       ExecutorService executor_reader = Executors.newFixedThreadPool(2);
+       ExecutorService executor_reader = Executors.newFixedThreadPool(4);
        while(true)
        {
            //Launch New thread for each connections
            try {
                http_server_thread reading_thread = new http_server_thread(serv_socket.accept());
-                executor_reader.execute(reading_thread); //Create only one thread for testing purpose
+               executor_reader.execute(reading_thread);
            } catch (IOException ex) {
                Logger.getLogger(http_listening_thread.class.getName()).log(Level.SEVERE, null, ex);
            }

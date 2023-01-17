@@ -41,7 +41,7 @@ class Customers
     Customer get(int);
     Customer get(string);
     void insert(Customer);
-    void modify(string,Customer);
+    void modify(Customer,Customer);
     void remove(string);
     int size();
 

@@ -1,11 +1,11 @@
 #include "Customers.h"
 Customers::Customers()
 {
-    data_file.open("data.csv");
+    data_file.open("data.csv", ios::in | ios::out);
 }
 Customers::Customers(const Customers& c){
     this->customers = c.customers;
-    data_file.open("data.csv");
+    data_file.open("data.csv", ios::in | ios::out);
 }
 Customers::~Customers()
 {
@@ -15,10 +15,9 @@ void Customers::save_insert(string s)
 {
     data_file<<s.c_str()<<endl;
 }
-void Customers::save_delete(string s_id)
+void Customers::save_delete(string customer)
 {
-    Customer c = get(s_id);
-    this->eraseFileLine(c.to_string());
+    this->eraseFileLine(customer);
 }
 Customer Customers::get(int i){
     return this->customers[i];
@@ -32,26 +31,35 @@ Customer Customers::get(string id){
     }
     return Customer();
 }
+//insert a customer in the vector and in the file + check if already exist
 void Customers::insert(Customer c){
+    for (int i = 0; i < this->customers.size(); i++)
+    {
+        if(this->customers[i].getId().compare(c.getId()) == 0)
+        {
+            this->modify(this->customers[i],c);
+            return;
+        }
+    }
     this->save_insert(c.to_string());
     this->customers.push_back(c);
 }
-void Customers::modify(string id,Customer c2){
-    for (int it = 0; (size_t)it > this->customers.size(); ++it)
-    {
-       if(customers[it].getId().compare(id) == 0)
-            //TODO : Check if the Customers[it] is deleted
-            customers[it] = c2;
-    }
+void Customers::modify(Customer c1,Customer c2){
+            c1=c2;
+            this->save_delete(c1.to_string());
+            this->save_insert(c2.to_string());
 }
 void Customers::remove(string id){
+    Customer c = get(id);
+    this->save_delete(c.getId());
     vector<Customer>::iterator ptr;
     for (ptr = customers.begin(); ptr < customers.end(); ptr++)
     {
         if(ptr.base()->getId().compare(id) == 0)
         {
             this->customers.erase(ptr);
-            this->eraseFileLine(ptr.base()->to_string());
+            this->save_delete(ptr.base()->to_string());
+            return;
         }
     }
 }

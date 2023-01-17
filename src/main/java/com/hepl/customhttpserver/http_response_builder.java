@@ -33,6 +33,7 @@ public class http_response_builder {
     }
     public void send(DataOutputStream o) throws IOException
     {
+        //TODO FIX THE MISSUNDERSTANDING OF the content lenght
         BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
         out.write(this.getVersion() + " " + this.getCode() + " " + this.getHumand_readable_code() + "\r\n");
         out.write(this.getContent_type() +"\r\n");

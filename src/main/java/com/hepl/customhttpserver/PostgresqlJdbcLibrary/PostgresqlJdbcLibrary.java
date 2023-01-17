@@ -7,8 +7,8 @@ import java.sql.SQLException;
 public class PostgresqlJdbcLibrary {
 
     private static final String DRIVER = "org.postgresql.Driver";
-    private static final String URL = "jdbc:postgresql://host:port/database";
-    private static final String USERNAME = "username";
+    private static final String URL = "jdbc:postgresql://127.0.0.1:5432/activities";
+    private static final String USERNAME = "postgresql";
     private static final String PASSWORD = "password";
 
     static {

@@ -71,7 +71,7 @@ void AddCustomer(int sock){
     cin >> name;
     cout << "Please enter surname : ";cout.flush();
     cin >> surname;
-    cout << "Please enter birtday : ";cout.flush();
+    cout << "Please enter birthday : ";cout.flush();
     cout << "d : ";cout.flush();
     cin >> day;
     cout << "m : ";cout.flush();
@@ -162,6 +162,7 @@ int Connect(int  sock,bool connected)
             connected = true;
         else
         {
+            Disconnect(sock,client_fd,connected);
             connected = false;
         }
     else{
@@ -175,7 +176,8 @@ int Connect(int  sock,bool connected)
 void Disconnect(int sock, int client_fd, bool connected )
 {
     close(client_fd);
-    cout<< "-----------------You're disconnected---------------------------------------"<< endl;
+    if(connected)
+        cout<< "-----------------You're disconnected---------------------------------------"<< endl;
 }
 
 int Menu(bool connected)

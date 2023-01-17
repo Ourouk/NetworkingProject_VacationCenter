@@ -5,10 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "Attach",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": "<debug port of the debuggee>"
+        },
+        {
             "name": "Server",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/auth_server",
+            "program": "${workspaceFolder}/target/auth_server",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -32,7 +39,7 @@
             "name": "Client",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/auth_client",
+            "program": "${workspaceFolder}/target/auth_client",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

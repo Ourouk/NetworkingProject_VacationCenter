@@ -10,6 +10,10 @@ import com.hepl.customhttpserver.data.Customer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 
 /**
@@ -103,38 +107,46 @@ public class http_smartHttp_server {
         return null;
     }
 
-    private String availableActivitiesForm(HashMap parsedParameters) throws IOException {
-
+    private String availableActivitiesForm(HashMap parsedParameters){
+        System.out.println("Trying to fetch information from the auth_server");
         //Check if the users is present in the server Database;
         String id = (String) parsedParameters.get("id");
         String to_add = new String();
+        System.out.println("");
         if (!id.isBlank()) {
-            auth_client auth_client = new auth_client("127.0.0.1", 5050);
-            Customer customer = auth_client.getCustomer(id);
-            PostgresqlJdbcLibrary postgresql = new PostgresqlJdbcLibrary(127.0.0.1,5432);
-            to_add += "<h1>Choose Activity for user : "+ customer.getName() + customer.getSurname() + "</h1>" + "\r\n";
-            to_add += "<p>Select Activities you want to participate to :</p>" + "\r\n" + 
-                      "<!-- Add Here all available Activities -->" + "\r\n";
-            
-                      //Here I will Enter All the available activities
-                    /*<form action="activitie_selected.html" method="post">
-                      <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-                      <label for="vehicle1"> I have a bike</label><br>
-                      <input type="checkbox" id="vehicle2" name="vehicle2" value="Car">
-                      <label for="vehicle2"> I have a car</label><br>
-                      <input type="checkbox" id="vehicle3" name="vehicle3" value="Boat">
-                      <label for="vehicle3"> I have a boat</label>
-                      <input name="Submit_button" type="submit" value="Submit" />
-                    </form>*/
-        }else
-        {
+            try {
+                auth_client auth_client = new auth_client("127.0.0.1", 5050);
+                Customer customer = auth_client.getCustomer(id);
+                to_add += "<h1>Choose Activity for user : " + customer.getName() + customer.getSurname() + "</h1>" + "\r\n";
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            to_add += "<p>Select Activities you want to participate to :</p>" + "\r\n" +
+                    "<!-- Add Here all available Activities -->" + "\r\n";
+            try {
+                Connection pg = PostgresqlJdbcLibrary.getConnection();
+                Statement statement = pg.createStatement();
+                //Download the available activities from the SQL Database;
+                System.out.println("Trying to fetch information from the postgresql_server");
+                ResultSet resultSet = statement.executeQuery("SELECT * FROM activities");
+                if (resultSet != null) {
+                    to_add += "<form action=\"activitie_selected.html\" method=\"post\">";
+                    while (resultSet.next()) {
+                        to_add += "<input type=\"checkbox\"id=\"" + resultSet.getString("name") + "\"name=\"" + resultSet.getString("name") + "\"value=\"Bike\">";
+                        to_add += "<label for=\"" + resultSet.getString("name") + "\">" + resultSet.getString("name") + "</label><br>";
+                    }
+                    to_add += "<input name=\"Submit_button\" type=\"submit\" value=\"Submit\" />" + "\r\n" +
+                            "</form>" + "\r\n";
+                    resultSet.close();
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        else {
             to_add += "<h1>No Id entered!</h1>";
         }
-        
 
-        //Download the available activities from the SQL Database;
         return to_add;
     }
-
-
 }
