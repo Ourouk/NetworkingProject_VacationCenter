@@ -8,4 +8,3 @@ WORKDIR /opt/auth_server/
 
 # Run any necessary commands to setup and run the project
 CMD ["./auth_server"]
-
