@@ -9,8 +9,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <mainClass>com.hepl.customhttpserver.CustomWebServer</mainClass>
-        <exec.mainClass>com.hepl.customhttpserver.CustomWebServer</exec.mainClass>
+        <mainClass>com.hepl.main</mainClass>
+        <exec.mainClass>com.hepl.main</exec.mainClass>
     </properties>
     <name>Project1_VacationCenter2</name>
     <build>

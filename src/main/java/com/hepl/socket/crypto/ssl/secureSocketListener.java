@@ -1,6 +1,6 @@
-package com.hepl.customhttpserver.crypto.ssl;
-import com.hepl.customhttpserver.http_listening_thread;
-import com.hepl.customhttpserver.http_server_thread;
+package com.hepl.socket.crypto.ssl;
+import com.hepl.socket.socketListener;
+import com.hepl.customhttpserver.httpClientHandlerThread;
 
 import java.io.*;
 import java.security.*;
@@ -15,16 +15,25 @@ import javax.net.ssl.*;
 // keytool -exportcert -alias server -keystore server_keystore.jks -file server_certificate.cer
 
 
-public class https_listener_thread implements Runnable{
+public class secureSocketListener implements Runnable{
     int port;
-    public https_listener_thread(int port)
+    int pool_size;
+    boolean need_auth = false;
+    public secureSocketListener(int port, int poolsize)
     {
         this.port = port;
+        this.pool_size = poolsize;
+    }
+    public secureSocketListener(int port, int poolsize, boolean need_auth)
+    {
+        this.port = port;
+        this.pool_size = poolsize;
+        this.need_auth = need_auth;
     }
     @Override
     public void run() {
 
-        Logger logger = Logger.getLogger(https_listener_thread.class.getName());
+        Logger logger = Logger.getLogger(secureSocketListener.class.getName());
         logger.setLevel(Level.INFO);
         try {
             logger.addHandler(new FileHandler("logs/" + "https_listener_thread" + ".log"));
@@ -48,18 +57,19 @@ public class https_listener_thread implements Runnable{
             SSLServerSocket serverSocket;
             serverSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(port);
             //Put this line if you want only authenticated client to be able to be connected
-            //serverSocket.setNeedClientAuth(true);
+            if(this.need_auth)
+                serverSocket.setNeedClientAuth(true);
 
     // Listening
             ExecutorService executor_reader = Executors.newFixedThreadPool(4);
             while (true) {
-                http_server_thread reading_thread = new http_server_thread(serverSocket.accept());
+                httpClientHandlerThread reading_thread = new httpClientHandlerThread(serverSocket.accept());
                 executor_reader.execute(reading_thread);
             }
 
 
         } catch (Exception e) {
-            Logger.getLogger(http_listening_thread.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(socketListener.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 }
