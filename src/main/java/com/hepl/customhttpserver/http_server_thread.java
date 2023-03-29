@@ -3,17 +3,18 @@
      * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
      */
     package com.hepl.customhttpserver;
+    import com.hepl.customhttpserver.crypto.ssl.https_listener_thread;
+
     import java.io.IOException;
     import java.net.*;
     import java.io.*;
-    import java.nio.CharBuffer;
     import java.nio.file.Files;
     import java.nio.file.Paths;
-    import java.util.Arrays;
     import java.util.HashMap;
     import java.util.ArrayList;
 
     import java.util.List;
+    import java.util.logging.FileHandler;
     import java.util.logging.Level;
     import java.util.logging.Logger;
     /**
@@ -30,17 +31,25 @@
         static final String FILE_NOT_FOUND = "404.html";
         static final String METHOD_NOT_SUPPORTED = "not_supported.html";
 
-        http_server_thread(Socket s)
+        public http_server_thread(Socket s)
         {
             if(WEB_ROOT.mkdir())
             {
                 System.out.println("Created Directory Containing HTML files");
             }
-            System.out.println("New Request Received");
+            System.out.println("New http/https request Received");
             this.socket = s;
         }
         @Override
         public void run() {
+
+            Logger logger = Logger.getLogger(https_listener_thread.class.getName());
+            try {
+                logger.addHandler(new FileHandler("logs/" + "https_server_thread" + ".log"));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
             try {
                 input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 output = new DataOutputStream(socket.getOutputStream());
@@ -77,12 +86,12 @@
                 }
                 output.flush();
                 socket.close();
-            }catch (IOException ex) {
+            }catch (Exception ex) {
                 ex.printStackTrace();
                 Logger.getLogger(http_server_thread.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        public void GEThandler(String[] command, List<String> header_list ,  List<String> body_list, DataOutputStream out) throws FileNotFoundException, IOException
+        public void GEThandler(String[] command, List<String> header_list ,  List<String> body_list, DataOutputStream out) throws FileNotFoundException, IOException, SocketException
         {
             String[] split_PathAndQuery = command[1].split("\\?");
             http_smartHttp_server smarthttp;
@@ -98,12 +107,22 @@
                 {
                     smarthttp = new http_smartHttp_server(Paths.get(WEB_ROOT.getPath(),split_PathAndQuery[0]));
                     http_response_builder response = new http_response_builder(smarthttp.getFileContent());
-                    response.send(out);
+                    try {
+                        response.send(out);
+                    }catch (Exception ex)
+                    {
+                        Logger.getLogger(http_server_thread.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }else
                 {
                     smarthttp = new http_smartHttp_server(Paths.get(WEB_ROOT.getPath(),FILE_NOT_FOUND));
                     http_response_builder response = new http_response_builder(smarthttp.getFileContent());
-                    response.send(out);
+                    try {
+                        response.send(out);
+                    }catch (Exception ex)
+                    {
+                        Logger.getLogger(http_server_thread.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
@@ -147,7 +166,12 @@
         }
         public void NOTSUPPORTEDdhandler(String[] command,List<String> header_list ,  List<String> body_list,DataOutputStream out) throws IOException
         {
-            http_response_builder http_response_builder = new http_response_builder(Files.readAllBytes(Paths.get(WEB_ROOT.getPath(), METHOD_NOT_SUPPORTED)));
-            http_response_builder.send(out);
+            http_response_builder response = new http_response_builder(Files.readAllBytes(Paths.get(WEB_ROOT.getPath(), METHOD_NOT_SUPPORTED)));
+            try {
+                response.send(out);
+            }catch (Exception ex)
+            {
+                Logger.getLogger(http_server_thread.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
