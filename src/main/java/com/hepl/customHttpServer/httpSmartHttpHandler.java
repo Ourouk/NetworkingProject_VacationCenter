@@ -2,11 +2,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package com.hepl.customhttpserver;
+package com.hepl.customHttpServer;
 
-import com.hepl.customhttpserver.PostgresqlJdbcLibrary.PostgresqlJdbcLibrary;
-import com.hepl.customhttpserver.auth_server_connector.auth_client;
-import com.hepl.customhttpserver.data.Customer;
+import com.hepl.customHttpServer.PostgresqlJdbcLibrary.PostgresqlJdbcLibrary;
+import com.hepl.customHttpServer.authServerConnector.authClient;
+import com.hepl.customHttpServer.authServerConnector.data.Customer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -115,8 +115,8 @@ public class httpSmartHttpHandler {
         System.out.println("");
         if (!id.isBlank()) {
             try {
-                auth_client auth_client = new auth_client("127.0.0.1", 5050);
-                Customer customer = auth_client.getCustomer(id);
+                authClient authClient = new authClient("127.0.0.1", 5050);
+                Customer customer = authClient.getCustomer(id);
                 to_add += "<h1>Choose Activity for user : " + customer.getName() + customer.getSurname() + "</h1>" + "\r\n";
             } catch (IOException e) {
                 throw new RuntimeException(e);

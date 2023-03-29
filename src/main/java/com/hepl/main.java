@@ -5,8 +5,8 @@
 
 package com.hepl;
 
-import com.hepl.customftpserver.ftpMain;
-import com.hepl.customhttpserver.httpMain;
+import com.hepl.customFtpServer.ftpMain;
+import com.hepl.customHttpServer.httpMain;
 /**
  *
  * @author Andrea

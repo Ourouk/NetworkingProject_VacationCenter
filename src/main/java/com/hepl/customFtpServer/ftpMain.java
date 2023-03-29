@@ -1,4 +1,4 @@
-package com.hepl.customftpserver;
+package com.hepl.customFtpServer;
 
 import com.hepl.socket.crypto.ssl.secureSocketListener;
 import com.hepl.socket.socketListener;

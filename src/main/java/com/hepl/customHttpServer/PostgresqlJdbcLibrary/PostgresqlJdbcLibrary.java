@@ -1,4 +1,4 @@
-package com.hepl.customhttpserver.PostgresqlJdbcLibrary;
+package com.hepl.customHttpServer.PostgresqlJdbcLibrary;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

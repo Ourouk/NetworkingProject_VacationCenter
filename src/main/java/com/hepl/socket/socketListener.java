@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.hepl.socket;
-import com.hepl.customhttpserver.httpClientHandlerThread;
+import com.hepl.customHttpServer.httpClientHandlerThread;
 import com.hepl.socket.crypto.ssl.secureSocketListener;
 
 import java.io.IOException;

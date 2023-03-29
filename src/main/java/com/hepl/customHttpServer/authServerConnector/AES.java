@@ -1,8 +1,7 @@
-package com.hepl.customhttpserver.auth_server_connector;
+package com.hepl.customHttpServer.authServerConnector;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 
 public class AES {
 

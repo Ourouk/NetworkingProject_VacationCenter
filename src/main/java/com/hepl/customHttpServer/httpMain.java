@@ -1,4 +1,4 @@
-package com.hepl.customhttpserver;
+package com.hepl.customHttpServer;
 
 import com.hepl.socket.crypto.ssl.secureSocketListener;
 import com.hepl.socket.socketListener;
