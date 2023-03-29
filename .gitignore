@@ -259,3 +259,6 @@ src/docker/sql-storage/data/*
 
 target
 login.csv
+/server.jks
+/server.cer
+/public.jks
