@@ -1,6 +1,7 @@
 package com.hepl.socket.crypto.ssl;
-import com.hepl.socket.socketListener;
+import com.hepl.customFtpServer.ftpClientControlHandlerThread;
 import com.hepl.customHttpServer.httpClientHandlerThread;
+import com.hepl.socket.socketListener;
 
 import java.io.*;
 import java.security.*;
@@ -19,16 +20,21 @@ public class secureSocketListener implements Runnable{
     int port;
     int pool_size;
     boolean need_auth = false;
-    public secureSocketListener(int port, int poolsize)
+    public enum availableHandler {
+        httpClientHandlerThread,ftpClientHandlerThread
+    }
+    availableHandler targetHandler = availableHandler.httpClientHandlerThread;
+    public secureSocketListener(int port, int poolsize )
     {
         this.port = port;
         this.pool_size = poolsize;
     }
-    public secureSocketListener(int port, int poolsize, boolean need_auth)
+    public secureSocketListener(int port, int poolsize, boolean need_auth,availableHandler availablehandler)
     {
         this.port = port;
         this.pool_size = poolsize;
         this.need_auth = need_auth;
+        this.targetHandler = availablehandler;
     }
     @Override
     public void run() {
@@ -62,12 +68,17 @@ public class secureSocketListener implements Runnable{
 
     // Listening
             ExecutorService executor_reader = Executors.newFixedThreadPool(4);
+
             while (true) {
-                httpClientHandlerThread reading_thread = new httpClientHandlerThread(serverSocket.accept());
-                executor_reader.execute(reading_thread);
+                if(targetHandler == availableHandler.httpClientHandlerThread) {
+                    httpClientHandlerThread reading_thread = new httpClientHandlerThread(serverSocket.accept());
+                    executor_reader.execute(reading_thread);
+                }
+                if(targetHandler == availableHandler.ftpClientHandlerThread) {
+                    ftpClientControlHandlerThread reading_thread = new ftpClientControlHandlerThread(serverSocket.accept(),sslContext);
+                    executor_reader.execute(reading_thread);
+                }
             }
-
-
         } catch (Exception e) {
             Logger.getLogger(socketListener.class.getName()).log(Level.SEVERE, null, e);
         }

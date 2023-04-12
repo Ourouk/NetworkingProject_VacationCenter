@@ -2,6 +2,7 @@
 SRC=./src
 #Target Directory
 TARGET=./target
+LOGS = ./logs
 #Compiler parameters
 COMPILER_CPP= g++
 CFLAGS = -g -Wall -D DEBUG
@@ -52,3 +53,4 @@ aes.o : $(SRC)/aes.c $(SRC)/aes.h
 
 clean:
 	rm -f -r $(TARGET)/*
+	rm -f -r $(LOGS)/*

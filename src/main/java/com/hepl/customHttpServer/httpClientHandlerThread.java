@@ -33,6 +33,12 @@
 
         public httpClientHandlerThread(Socket s)
         {
+            Logger logger = Logger.getLogger(secureSocketListener.class.getName());
+            try {
+                logger.addHandler(new FileHandler("logs/" + "https_server_thread" + ".log"));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             if(WEB_ROOT.mkdir())
             {
                 System.out.println("Created Directory Containing HTML files");
@@ -42,14 +48,6 @@
         }
         @Override
         public void run() {
-
-            Logger logger = Logger.getLogger(secureSocketListener.class.getName());
-            try {
-                logger.addHandler(new FileHandler("logs/" + "https_server_thread" + ".log"));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
             try {
                 input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 output = new DataOutputStream(socket.getOutputStream());

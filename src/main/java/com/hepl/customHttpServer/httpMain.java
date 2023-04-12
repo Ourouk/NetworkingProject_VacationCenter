@@ -18,7 +18,7 @@ public class httpMain implements Runnable{
         http_listening_thread.start();
         System.out.println("The server url is http://127.0.0.1:"+port);
 
-        secureSocketListener SSLlistener_thread = new secureSocketListener(ssl_port,4,false);
+        secureSocketListener SSLlistener_thread = new secureSocketListener(ssl_port,4,false, secureSocketListener.availableHandler.ftpClientHandlerThread);
         Thread https_listener_thread = new Thread(SSLlistener_thread);
         https_listener_thread.start();
 

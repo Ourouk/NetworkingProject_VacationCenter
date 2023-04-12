@@ -24,7 +24,7 @@ void * CommandBuilder(string Command, string Attribute_in, int &lenght){
     //Encrypt Attribute
     encrypt_string(Attribute,key);
 
-    //Formating the command type inside
+    //Formatting the command type inside
     //int size = Command.length() + sizeof(int) + aes_imposed_size;
     int size = 6 + aes_imposed_size; //Should be the same ...
     char* str = (char *)malloc(size);
