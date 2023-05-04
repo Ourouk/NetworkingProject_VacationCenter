@@ -262,5 +262,7 @@ login.csv
 /server.jks
 /server.cer
 /public.jks
-ftp
-www
+#Folders
+ftp/
+www/
+logs/
