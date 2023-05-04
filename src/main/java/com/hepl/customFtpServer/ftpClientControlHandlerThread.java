@@ -19,22 +19,15 @@ public class ftpClientControlHandlerThread implements Runnable{
 
 //region Properties Type
     /**
-     * A list of available command
-     */
-    public enum commandType {USER,PASS,RETR,STOR,PASV,QUIT}
-    /**
      * Status of the server
      */
     public enum transferConnectionStatus {PASSIVE,ACTIVE}
-    public transferConnectionStatus currentTranferConnectionTypeStatus;
-    /**
-     * Indicating the last set transfer type
-     */
+    public transferConnectionStatus currentTransferConnectionTypeStatus;
 
     /**
      * Indicates the authentication status of a user
      */
-    private enum userStatus {NOTLOGGEDIN, ENTEREDUSERNAME, LOGGEDIN}
+    private enum userStatus {LOGGED, NOLOGGING, PASSWORD}
 
     /**
      *  Cryptographic status
@@ -55,7 +48,7 @@ public class ftpClientControlHandlerThread implements Runnable{
     private userStatus currentUserStatus;
 
 
-    //Oupout stream
+    //Output stream
     BufferedWriter out;
 
     /**
@@ -70,7 +63,7 @@ public class ftpClientControlHandlerThread implements Runnable{
     /**
      * Class that define user needed by the server
      */
-    private class User{
+    private static class User{
         public String username;
         public String password;
         public right right;
@@ -90,7 +83,7 @@ public class ftpClientControlHandlerThread implements Runnable{
     private User currentuser = null;
 
     //TODO Refactor if dynamic user needed
-    private  ArrayList<User> users = new ArrayList<User>();
+    private final ArrayList<User> users = new ArrayList<>();
 
 
     public SSLContext sslContext;
@@ -106,8 +99,8 @@ public class ftpClientControlHandlerThread implements Runnable{
     public ftpClientControlHandlerThread(Socket s)
     {
         //Default State
-        currentUserStatus = userStatus.NOTLOGGEDIN;
-        currentTranferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
+        currentUserStatus = userStatus.NOLOGGING;
+        currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
         currentCryptStatus = cryptStatus.PLAIN;
         currDirectory = "/";
         this.s = s;
@@ -117,16 +110,16 @@ public class ftpClientControlHandlerThread implements Runnable{
             throw new RuntimeException(e);
         }
         if(defaultUsers) {
-            this.users.add(new User("admin","admin",right.RW));
-            this.users.add(new User("guest","guest",right.R));
-            this.users.add(new User("anonymous","anonymous",right.R));
+            this.users.add(new User("admin", "admin", right.RW));
+            this.users.add(new User("guest", "guest", right.R));
+            this.users.add(new User("anonymous", "anonymous", right.R));
         }
     }
     public ftpClientControlHandlerThread(Socket s, SSLContext sslContext)
     {
         //Default State
-        currentUserStatus = userStatus.NOTLOGGEDIN;
-        currentTranferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
+        currentUserStatus = userStatus.NOLOGGING;
+        currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
         currentCryptStatus = cryptStatus.TLS;
         this.sslContext =  sslContext;
         this.s = s;
@@ -136,9 +129,9 @@ public class ftpClientControlHandlerThread implements Runnable{
             throw new RuntimeException(e);
         }
         if(defaultUsers) {
-            this.users.add(new User("admin","admin",right.RW));
-            this.users.add(new User("guest","guest",right.R));
-            this.users.add(new User("anonymous","anonymous",right.R));
+            this.users.add(new User("admin", "admin", right.RW));
+            this.users.add(new User("guest", "guest", right.R));
+            this.users.add(new User("anonymous", "anonymous", right.R));
         }
     }
     //endregion
@@ -174,33 +167,32 @@ public class ftpClientControlHandlerThread implements Runnable{
     private void executeCommand(String c)
     {
         ConsoleLogging(c);
-        String [] cSplitted;
+        String [] cSplit;
         if(c != null)
-            cSplitted = c.split(" ");
+            cSplit = c.split(" ");
         else
             throw new NullPointerException("No command received");
-        String Command = cSplitted[0];
-        switch(Command)
-        {
-            case "PWD" : PWDhandler(cSplitted); break;
-            case "CWD" : CWDhandler(cSplitted); break;
-            case "NLST","LIST" : NLSThandler(cSplitted); break;
-            case "TYPE" : TYPEhandler(cSplitted); break;
-            case "PORT" : PORThandler(cSplitted); break;
-            case "USER": USERhandler(cSplitted); break;
-            case "PASS": PASShandler(cSplitted); break;
-            case "PASV": PASVhandler(cSplitted); break;
-            case "ACTV": ACTVhandler(cSplitted); break;
-            case "RETR": RETRhandler(cSplitted); break;
-            case "STOR": STORhandler(cSplitted); break;
-            case "QUIT": QUIThandler(cSplitted); break;
-            case default: sendMsgToClient("500 Command not implemented :" + Command); break;
+        String Command = cSplit[0];
+        switch (Command) {
+            case "PWD" -> PWDhandler();
+            case "CWD" -> CWDhandler(cSplit);
+            case "NLST", "LIST" -> NLSThandler(cSplit);
+            case "TYPE" -> TYPEhandler(cSplit);
+            case "PORT" -> PORThandler(cSplit);
+            case "USER" -> USERhandler(cSplit);
+            case "PASS" -> PASShandler(cSplit);
+            case "PASV" -> PASVhandler();
+            case "ACTV" -> ACTVhandler();
+            case "RETR" -> RETRhandler(cSplit);
+            case "STOR" -> STORhandler(cSplit);
+            case "QUIT" -> QUIThandler();
+            case default -> sendMsgToClient("500 Command not implemented :" + Command);
         }
     }
 
-    private void PORThandler(String[] cSplitted) {
-        if(cSplitted.length > 1) {
-            String[] port = cSplitted[1].split(",");
+    private void PORThandler(String[] cSplit) {
+        if(cSplit.length > 1) {
+            String[] port = cSplit[1].split(",");
             if (port.length == 6) {
                 this.dataPort = Integer.parseInt(port[4]) * 256 + Integer.parseInt(port[5]);
                 this.dataIP = port[0] + "." + port[1] + "." + port[2] + "." + port[3];
@@ -213,21 +205,21 @@ public class ftpClientControlHandlerThread implements Runnable{
             sendMsgToClient("501 Syntax error in parameters or arguments.");
     }
 
-    private void TYPEhandler(String[] cSplitted) {
-        if(cSplitted[1].equals("I"))
+    private void TYPEhandler(String[] cSplit) {
+        if(cSplit[1].equals("I"))
             sendMsgToClient("200 Command OK"); //SUPPORT ONLY BINARY
         else
             sendMsgToClient("504 Command not implemented for that parameter");
     }
 
 
-    private void PWDhandler(String[] cSplitted) {
+    private void PWDhandler() {
         sendMsgToClient("257 \""+this.currDirectory+"\" is the current directory");
     }
 
-    private void CWDhandler(String[] cSplitted) {
-        if (cSplitted.length > 1) {
-            String directory = cSplitted[1];
+    private void CWDhandler(String[] cSplit) {
+        if (cSplit.length > 1) {
+            String directory = cSplit[1];
             if (directory.equals("..")) {
                 if (currDirectory.equals("/")) {
                     sendMsgToClient("550 Can't go up from root directory");
@@ -249,19 +241,19 @@ public class ftpClientControlHandlerThread implements Runnable{
         }
     }
 
-    private void NLSThandler(String[] cSplitted) {
-        Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.NLST,cSplitted));
+    private void NLSThandler(String[] cSplit) {
+        Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.NLST,cSplit));
         dataThread.start();
     }
 
-    private void USERhandler(String[] cSplitted){
-        if (cSplitted.length > 1) {
-            String username = cSplitted[1];
-            if (currentUserStatus == userStatus.NOTLOGGEDIN) {
+    private void USERhandler(String[] cSplit){
+        if (cSplit.length > 1) {
+            String username = cSplit[1];
+            if (currentUserStatus == userStatus.NOLOGGING) {
                 for (User u : users) {
                     if (u.username.equals(username)) {
                         sendMsgToClient("331 User name okay, need password");
-                        currentUserStatus = userStatus.ENTEREDUSERNAME;
+                        currentUserStatus = userStatus.PASSWORD;
                         currentuser = u;
                     }
                 }
@@ -272,12 +264,12 @@ public class ftpClientControlHandlerThread implements Runnable{
             sendMsgToClient("530 Not logged in (empty password)");
         }
     }
-    private void PASShandler(String[] cSplitted){
-        if (cSplitted.length > 1) {
-            String password = cSplitted[1];
+    private void PASShandler(String[] cSplit){
+        if (cSplit.length > 1) {
+            String password = cSplit[1];
             if (currentuser != null) {
                 if(currentuser.password.equals(password)) {
-                    currentUserStatus = userStatus.LOGGEDIN;
+                    currentUserStatus = userStatus.LOGGED;
                     sendMsgToClient("230 Welcome to "+ currentuser.username);
                     sendMsgToClient("230 User logged in successfully");
                 }else{
@@ -288,11 +280,11 @@ public class ftpClientControlHandlerThread implements Runnable{
             sendMsgToClient("530 Not logged in (empty password)");
         }
     }
-    private void PASVhandler(String[] cSplitted) {
-        currentTranferConnectionTypeStatus = transferConnectionStatus.PASSIVE;
+    private void PASVhandler() {
+        currentTransferConnectionTypeStatus = transferConnectionStatus.PASSIVE;
         //Trying to give a hint to the client on how to connect properly to the server in passive mode
-        String myIp = "127.0.0.1";
-        String myIpSplit[] = myIp.split("\\.");
+        String myIp = s.getLocalAddress().getHostAddress(); //TODO handle IPV6
+        String[] myIpSplit = myIp.split("\\.");
 
         int p1 = dataPort / 256;
         int p2 = dataPort % 256;
@@ -300,24 +292,24 @@ public class ftpClientControlHandlerThread implements Runnable{
         sendMsgToClient("227 Entering Passive Mode (" + myIpSplit[0] + "," + myIpSplit[1] + "," + myIpSplit[2] + ","
                 + myIpSplit[3] + "," + p1 + "," + p2 + ")");
     }
-    private void ACTVhandler(String[] cSplitted) {
-        currentTranferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
+    private void ACTVhandler() {
+        currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
         sendMsgToClient("227 Server switched to active mode");
     }
-    private void RETRhandler(String[] cSplitted){
+    private void RETRhandler(String[] cSplit){
         if(currentuser.right != right.W)
         {
-            Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.RETR,cSplitted));
+            Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.RETR,cSplit));
             dataThread.start();
         }
         else {
             sendMsgToClient("530 No right to retrieve file");
         }
     }
-    private void STORhandler(String[] cSplitted){
+    private void STORhandler(String[] cSplit){
         if(currentuser.right != right.R)
         {
-            Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.STOR,cSplitted));
+            Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.STOR,cSplit));
             dataThread.start();
         }
         else
@@ -325,7 +317,7 @@ public class ftpClientControlHandlerThread implements Runnable{
             sendMsgToClient("530 No right to store file");
         }
     }
-    private void QUIThandler(String[] cSplitted){
+    private void QUIThandler(){
         this.quitCommandLoop = true;
     }
 //endregion

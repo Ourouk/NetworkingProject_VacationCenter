@@ -10,8 +10,8 @@ import java.util.Locale;
 
 public class ftpClientDataTransferHandlerThread implements Runnable{
 
-    private ftpClientControlHandlerThread controller;
-    private String[] full_command;
+    private final ftpClientControlHandlerThread controller;
+    private final String[] full_command;
     private Socket socket;
 
     public ftpClientDataTransferHandlerThread(ftpClientControlHandlerThread ftpClientControlHandlerThread, commandType commandType, String[] cSplitted) {
@@ -22,7 +22,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
 
     public enum commandType {STOR,RETR,NLST}
     public enum transferType {ASCII,BINARY}
-    private commandType currentCommandType;
+    private final commandType currentCommandType;
     private transferType currentTransferType;
 
     @Override
@@ -34,7 +34,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         }
         this.controller.sendMsgToClient("150 Opening " + currentTransferType + " mode data transfer for " + currentCommandType + " command");
         this.socket = createDataConnection();
-        if(socket != null || socket.isClosed()) {
+        if(socket != null) {
             switch (currentCommandType) {
                 case STOR -> storFile(pathHandler());
                 case RETR -> retrFile(pathHandler());
@@ -49,7 +49,6 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return;
     }
 
     private File pathHandler() {
@@ -66,8 +65,8 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         }catch (NullPointerException e)
         {
             controller.sendMsgToClient("501 Syntax error in parameters or arguments.");
+            throw new RuntimeException("501 Syntax error in parameters or arguments.");
         }
-        return null;
     }
     private Socket createDataConnection() {
         ConsoleLogging("Creating data connection on " + controller.dataIP + ":" + controller.dataPort);
@@ -86,7 +85,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
     //Init socket for data transfer
     private Socket createPlainDataConnection() throws IOException {
         Socket socket = null;
-        switch (controller.currentTranferConnectionTypeStatus) {
+        switch (controller.currentTransferConnectionTypeStatus) {
             case PASSIVE -> socket = createPlainPassiveDataConnection();
             case ACTIVE -> socket = createPlainActiveDataConnection();
         }
@@ -100,14 +99,15 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
 
     private Socket createPlainPassiveDataConnection() throws IOException {
         Socket socket;
-        ServerSocket serverSocket = new ServerSocket(controller.dataPort);
-        socket = serverSocket.accept();
+        try (ServerSocket serverSocket = new ServerSocket(controller.dataPort)) {
+            socket = serverSocket.accept();
+        }
         return socket;
     }
 
     private Socket createSecureDataConnection() throws IOException {
         Socket socket = null;
-        switch (controller.currentTranferConnectionTypeStatus) {
+        switch (controller.currentTransferConnectionTypeStatus) {
 
             case PASSIVE -> socket = createSecurePassiveDataConnection();
             case ACTIVE -> socket = createSecureActiveDataConnection();
@@ -117,22 +117,23 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
 
     /**
      * Init a listening socket and then handle the connection reusing the server certificate
-     * @return
+     * @return Socket
      */
     private Socket createSecureActiveDataConnection() throws IOException {
-        Socket socket = null;
+        Socket socket;
         socket = controller.sslContext.getSocketFactory().createSocket(controller.dataIP,controller.dataPort);
         return socket;
     }
 
     /**
      * Try to connect to the client and then handle connection
-     * @return
+     * @return Socket
      */
     private Socket createSecurePassiveDataConnection() throws IOException {
         Socket socket;
-        ServerSocket serverSocket = controller.sslContext.getServerSocketFactory().createServerSocket(controller.dataPort);
-        socket = serverSocket.accept();
+        try (ServerSocket serverSocket = controller.sslContext.getServerSocketFactory().createServerSocket(controller.dataPort)) {
+            socket = serverSocket.accept();
+        }
         return socket;
     }
     //endregion
@@ -140,7 +141,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
     private void storFile(File file)
     {
         ConsoleLogging("Storing file" + file.getName());
-        if(file != null) {
+        if(file.isFile()) {
             byte[] buffer = new byte[8192];
             int read_lenght;
             try {
@@ -158,7 +159,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
     private void retrFile(File file)
     {
         ConsoleLogging("Retrieving file: " + file.getAbsolutePath());
-        if(file != null) {
+        if(file.isFile()) {
             byte[] buffer = new byte[8192];
             int read_lenght;
             try {
