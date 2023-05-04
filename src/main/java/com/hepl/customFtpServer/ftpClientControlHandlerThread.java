@@ -98,28 +98,16 @@ public class ftpClientControlHandlerThread implements Runnable{
 //region Constructors
     public ftpClientControlHandlerThread(Socket s)
     {
-        //Default State
-        currentUserStatus = userStatus.NOLOGGING;
-        currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
         currentCryptStatus = cryptStatus.PLAIN;
-        currDirectory = "/";
         this.s = s;
         try {
             out = new BufferedWriter(new OutputStreamWriter(new DataOutputStream(this.s.getOutputStream())));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        if(defaultUsers) {
-            this.users.add(new User("admin", "admin", right.RW));
-            this.users.add(new User("guest", "guest", right.R));
-            this.users.add(new User("anonymous", "anonymous", right.R));
-        }
     }
     public ftpClientControlHandlerThread(Socket s, SSLContext sslContext)
     {
-        //Default State
-        currentUserStatus = userStatus.NOLOGGING;
-        currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
         currentCryptStatus = cryptStatus.TLS;
         this.sslContext =  sslContext;
         this.s = s;
@@ -128,16 +116,19 @@ public class ftpClientControlHandlerThread implements Runnable{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        if(defaultUsers) {
-            this.users.add(new User("admin", "admin", right.RW));
-            this.users.add(new User("guest", "guest", right.R));
-            this.users.add(new User("anonymous", "anonymous", right.R));
-        }
     }
     //endregion
 //region Command Management
     @Override
     public void run() {
+        currentUserStatus = userStatus.NOLOGGING;
+        currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
+        currDirectory = "/";
+        if(defaultUsers) {
+            this.users.add(new User("admin", "admin", right.RW));
+            this.users.add(new User("guest", "guest", right.R));
+            this.users.add(new User("anonymous", "anonymous", right.R));
+        }
         dataIP = s.getLocalAddress().getHostAddress(); //Default Ip address
         //Set the default port
         if (sslContext == null) {
