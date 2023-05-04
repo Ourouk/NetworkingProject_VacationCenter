@@ -3,14 +3,16 @@ package com.hepl.customFtpServer;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 
 public class ftpClientDataTransferHandlerThread implements Runnable{
 
-    String defaultFtpPath = "ftp";
     private ftpClientControlHandlerThread controller;
     private String[] full_command;
+    private Socket socket;
 
     public ftpClientDataTransferHandlerThread(ftpClientControlHandlerThread ftpClientControlHandlerThread, commandType commandType, String[] cSplitted) {
         this.controller = ftpClientControlHandlerThread;
@@ -18,89 +20,87 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         this.full_command = cSplitted;
     }
 
-    public enum commandType {STOR,RETR};
+    public enum commandType {STOR,RETR,NLST}
+    public enum transferType {ASCII,BINARY}
     private commandType currentCommandType;
+    private transferType currentTransferType;
 
     @Override
     public void run() {
-        Socket socket = createDataConnection();
-        Path path  = Path.of(defaultFtpPath, full_command[1]);
-        File file = new File(path.toString());
-        byte[] buffer = new byte[1024];
-        int read_lenght = 0;
-        switch (currentCommandType)
+        switch(currentCommandType)
         {
-            case STOR:
-                try
-                {
-                    BufferedInputStream input = new BufferedInputStream(socket.getInputStream());
-                    FileOutputStream file_out = new FileOutputStream(file);
-                    while((read_lenght = input.read(buffer,0,1024)) != -1){
-                        file_out.write(buffer,0,read_lenght);
-                    }
-                }catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-                break;
-            case RETR:
-                try
-                {
-                    BufferedOutputStream output  = new BufferedOutputStream(socket.getOutputStream());
-                    FileInputStream file_in = new FileInputStream(file);
-                    while((read_lenght = file_in.read(buffer,0,1024)) != -1){
-                        output.write(buffer,0,read_lenght);
-                    }
-                }catch(IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-                break;
+            case STOR, RETR -> currentTransferType = transferType.BINARY;
+            case NLST -> currentTransferType = transferType.ASCII;
         }
+        this.controller.sendMsgToClient("150 Opening " + currentTransferType + " mode data transfer for " + currentCommandType + " command");
+        this.socket = createDataConnection();
+        if(socket != null || socket.isClosed()) {
+            switch (currentCommandType) {
+                case STOR -> storFile(pathHandler());
+                case RETR -> retrFile(pathHandler());
+                case NLST -> nlstHandler();
+            }
+        }else {
+            controller.sendMsgToClient("425 No data connection was established");
+        }
+        try {
+            socket.close();
+            System.out.println("Data connection closed");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return;
     }
 
-    public enum transferType {ASCII, BINARY}
-
-
+    private File pathHandler() {
+        try {
+            File file;
+            if(full_command[1].getBytes()[1] == '/')
+            {
+                file = new File(controller.rootDirectory + File.separator + full_command[1]);
+            }else {
+                file = new File(controller.rootDirectory + File.separator + controller.currDirectory +
+                        File.separator + full_command[1]);
+            }
+            return file;
+        }catch (NullPointerException e)
+        {
+            controller.sendMsgToClient("501 Syntax error in parameters or arguments.");
+        }
+        return null;
+    }
     private Socket createDataConnection() {
+        ConsoleLogging("Creating data connection on " + controller.dataIP + ":" + controller.dataPort);
         try {
             Socket socket = null;
             switch (controller.currentCryptStatus) {
-                case PLAIN -> {
-                    socket = createPlainDataConnection();
-                }
-                case TLS -> {
-                    socket = createSecureDataConnection();
-                }
+                case PLAIN -> socket = createPlainDataConnection();
+                case TLS -> socket = createSecureDataConnection();
             }
             return socket;
         }catch (IOException e)
         {
             throw new RuntimeException(e);
         }
-
     }
+    //Init socket for data transfer
     private Socket createPlainDataConnection() throws IOException {
         Socket socket = null;
         switch (controller.currentTranferConnectionTypeStatus) {
-            case PASSIVE -> {
-                socket = createPlainPassiveDataConnection();
-            }
-            case ACTIVE -> {
-                socket = createPlainActiveDataConnection();
-            }
+            case PASSIVE -> socket = createPlainPassiveDataConnection();
+            case ACTIVE -> socket = createPlainActiveDataConnection();
         }
         return socket;
     }
     private Socket createPlainActiveDataConnection() throws IOException {
-        Socket socket = null;
-        socket = new Socket(controller.s.getInetAddress(),controller.s.getPort()-1);
+        Socket socket;
+        socket = new Socket(controller.dataIP,controller.dataPort);
         return socket;
     }
 
     private Socket createPlainPassiveDataConnection() throws IOException {
-        Socket socket = null;
-        ServerSocket serverSocket = new ServerSocket(controller.s.getPort()-1);
+        Socket socket;
+        ServerSocket serverSocket = new ServerSocket(controller.dataPort);
         socket = serverSocket.accept();
         return socket;
     }
@@ -109,12 +109,8 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         Socket socket = null;
         switch (controller.currentTranferConnectionTypeStatus) {
 
-            case PASSIVE -> {
-                socket = createSecurePassiveDataConnection();
-            }
-            case ACTIVE -> {
-                socket = createSecureActiveDataConnection();
-            }
+            case PASSIVE -> socket = createSecurePassiveDataConnection();
+            case ACTIVE -> socket = createSecureActiveDataConnection();
         }
         return socket;
     }
@@ -125,7 +121,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
      */
     private Socket createSecureActiveDataConnection() throws IOException {
         Socket socket = null;
-        socket = controller.sslContext.getSocketFactory().createSocket(controller.s.getInetAddress(),controller.s.getPort()-1);
+        socket = controller.sslContext.getSocketFactory().createSocket(controller.dataIP,controller.dataPort);
         return socket;
     }
 
@@ -134,11 +130,121 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
      * @return
      */
     private Socket createSecurePassiveDataConnection() throws IOException {
-        Socket socket = null;
-        ServerSocket serverSocket = controller.sslContext.getServerSocketFactory().createServerSocket(controller.s.getPort()-1);
-        socket =  serverSocket.accept();
+        Socket socket;
+        ServerSocket serverSocket = controller.sslContext.getServerSocketFactory().createServerSocket(controller.dataPort);
+        socket = serverSocket.accept();
         return socket;
     }
     //endregion
+    //region Interaction with file system
+    private void storFile(File file)
+    {
+        ConsoleLogging("Storing file" + file.getName());
+        if(file != null) {
+            byte[] buffer = new byte[8192];
+            int read_lenght;
+            try {
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+                DataOutputStream file_out = new DataOutputStream(new FileOutputStream(file));
+                while ((read_lenght = input.read(buffer, 0, buffer.length)) != -1) {
+                    file_out.write(buffer, 0, read_lenght);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            controller.sendMsgToClient("226 Closing data connection. Requested file action successful");
+        }
+    }
+    private void retrFile(File file)
+    {
+        ConsoleLogging("Retrieving file: " + file.getAbsolutePath());
+        if(file != null) {
+            byte[] buffer = new byte[8192];
+            int read_lenght;
+            try {
+                DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+                DataInputStream file_in = new DataInputStream(new FileInputStream(file));
+                while ((read_lenght = file_in.read(buffer, 0, buffer.length)) != -1) {
+                    output.write(buffer, 0, read_lenght);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            controller.sendMsgToClient("226 Closing data connection. Requested file action successful");
+        }
+    }
+    private void nlstHandler() {
+        File[] files;
+        if(full_command.length == 1) {
+            files = nlstHelper(null);
+        } else {
+            files = nlstHelper(full_command[1]);
+        }
+        if (files == null) {
+            controller.sendMsgToClient("550 Requested action not taken. File unavailable (e.g., file not found, no access).");
+        } else {
+            try {
+                BufferedOutputStream output = new BufferedOutputStream(socket.getOutputStream(), 1024);
+                //Refactoring based on https://forum.filezilla-project.org/viewtopic.php?t=18556
+                SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d HH:mm", Locale.ENGLISH);
+                for (File file : files) {
+                    if(file.isDirectory()) {
+                        sendDataMsgToClient( controller.getCurrentUsersRightsPosix() + "\t" + "1" +
+                                controller.getCurrentUser() + "\t" + controller.getCurrentUser() + "\t"+"4096"+ "\t" +
+                                dateFormat.format(new Date(file.lastModified())) + "\t" + file.getName(), output);
+                    }
+                    else {
+                        sendDataMsgToClient( controller.getCurrentUsersRightsPosix() + "\t" + "1" + "\t" +
+                                controller.getCurrentUser() + "\t" + controller.getCurrentUser() + "\t"+file.length()+ "\t" +
+                                dateFormat.format(new Date(file.lastModified())) + "\t" + file.getName(), output);
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            controller.sendMsgToClient("226 Closing data connection. Requested file action successful");
+        }
+    }
+
+    // Extracted from https://github.com/pReya/ftpServer/blob/master/src/ftpServer/Worker.java
+    // Return a list of files from a path String
+    private File[] nlstHelper(String args) {
+        // Construct the name of the directory to list.
+        String filename = controller.rootDirectory+controller.currDirectory;
+        if (args != null) {
+            filename = filename + File.separator + args;
+        }
+
+        // Now get a File object, and see if the name we got exists and is a
+        // directory.
+        File f = new File(filename);
+
+        if (f.exists() && f.isDirectory()) {
+            return f.listFiles();
+        } else if (f.exists() && f.isFile()) {
+            File[] f_list = new File[1];
+            f_list[0] = f;
+            return f_list;
+        } else {
+            return null;
+        }
+    }
+    //endregion
+    private void sendDataMsgToClient(String msg,BufferedOutputStream dataOutWriter) throws IOException {
+        //TODO: Remove This is only usefully during debugging
+        System.out.println(msg);
+        dataOutWriter.write((msg + '\n').getBytes());
+        dataOutWriter.flush();
+    }
+//endregion
+//region Helper Functions
+    /**
+     * Simple "Macro" Managing the console log
+     * @param log String containing the message that is needed to be displayed on the console
+     */
+    private void ConsoleLogging(String log)
+    {
+        System.out.println("Thread " + Thread.currentThread().getId() + " at " + java.time.LocalDateTime.now().getHour()+":"+java.time.LocalDateTime.now().getMinute()+ ":"+ java.time.LocalDateTime.now().getSecond() + " : " +  log);
+    }
 //endregion
 }

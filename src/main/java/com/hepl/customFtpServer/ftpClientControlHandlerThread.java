@@ -3,14 +3,20 @@ package com.hepl.customFtpServer;
 
 import javax.net.ssl.SSLContext;
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ftpClientControlHandlerThread implements Runnable{
+    public String dataIP;
+    public int dataPort;
+
 //region Properties Type
     /**
      * A list of available command
@@ -50,7 +56,6 @@ public class ftpClientControlHandlerThread implements Runnable{
 
 
     //Oupout stream
-
     BufferedWriter out;
 
     /**
@@ -89,7 +94,14 @@ public class ftpClientControlHandlerThread implements Runnable{
 
 
     public SSLContext sslContext;
-//endregion
+
+    /**
+    * File management
+    */
+    public String rootDirectory = "ftp";
+    public String currDirectory;
+
+    //endregion
 //region Constructors
     public ftpClientControlHandlerThread(Socket s)
     {
@@ -97,7 +109,7 @@ public class ftpClientControlHandlerThread implements Runnable{
         currentUserStatus = userStatus.NOTLOGGEDIN;
         currentTranferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
         currentCryptStatus = cryptStatus.PLAIN;
-
+        currDirectory = "/";
         this.s = s;
         try {
             out = new BufferedWriter(new OutputStreamWriter(new DataOutputStream(this.s.getOutputStream())));
@@ -133,8 +145,17 @@ public class ftpClientControlHandlerThread implements Runnable{
 //region Command Management
     @Override
     public void run() {
+        dataIP = s.getLocalAddress().getHostAddress(); //Default Ip address
+        //Set the default port
+        if (sslContext == null) {
+            currentCryptStatus = cryptStatus.PLAIN;
+            dataPort = 20;
+        } else{
+            currentCryptStatus = cryptStatus.TLS;
+            dataPort = 990;
+        }
         try {
-            ConsoleLogging("Thread Initialised : " + s.getInetAddress().toString() +':'+  s.getPort());
+            ConsoleLogging("Thread Initialised : " + s.getInetAddress().getHostAddress() +':'+  s.getLocalPort());
             //Respond to the connection try
             BufferedReader socketReader = new BufferedReader(new InputStreamReader(s.getInputStream()));
             sendMsgToClient("220 Welcome to the Custom FTP-Server made by Andrea Spelgatti");
@@ -149,7 +170,6 @@ public class ftpClientControlHandlerThread implements Runnable{
         } catch (Exception e) {
             Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
         }
-
     }
     private void executeCommand(String c)
     {
@@ -162,6 +182,11 @@ public class ftpClientControlHandlerThread implements Runnable{
         String Command = cSplitted[0];
         switch(Command)
         {
+            case "PWD" : PWDhandler(cSplitted); break;
+            case "CWD" : CWDhandler(cSplitted); break;
+            case "NLST","LIST" : NLSThandler(cSplitted); break;
+            case "TYPE" : TYPEhandler(cSplitted); break;
+            case "PORT" : PORThandler(cSplitted); break;
             case "USER": USERhandler(cSplitted); break;
             case "PASS": PASShandler(cSplitted); break;
             case "PASV": PASVhandler(cSplitted); break;
@@ -169,11 +194,65 @@ public class ftpClientControlHandlerThread implements Runnable{
             case "RETR": RETRhandler(cSplitted); break;
             case "STOR": STORhandler(cSplitted); break;
             case "QUIT": QUIThandler(cSplitted); break;
+            case default: sendMsgToClient("500 Command not implemented :" + Command); break;
         }
     }
 
+    private void PORThandler(String[] cSplitted) {
+        if(cSplitted.length > 1) {
+            String[] port = cSplitted[1].split(",");
+            if (port.length == 6) {
+                this.dataPort = Integer.parseInt(port[4]) * 256 + Integer.parseInt(port[5]);
+                this.dataIP = port[0] + "." + port[1] + "." + port[2] + "." + port[3];
+                sendMsgToClient("200 PORT command successful. Set to "+ this.dataPort + ". Consider using PASV.");
+            } else {
+                sendMsgToClient("501 Syntax error in parameters or arguments.");
+            }
+        }
+        else
+            sendMsgToClient("501 Syntax error in parameters or arguments.");
+    }
+
+    private void TYPEhandler(String[] cSplitted) {
+        if(cSplitted[1].equals("I"))
+            sendMsgToClient("200 Command OK"); //SUPPORT ONLY BINARY
+        else
+            sendMsgToClient("504 Command not implemented for that parameter");
+    }
 
 
+    private void PWDhandler(String[] cSplitted) {
+        sendMsgToClient("257 \""+this.currDirectory+"\" is the current directory");
+    }
+
+    private void CWDhandler(String[] cSplitted) {
+        if (cSplitted.length > 1) {
+            String directory = cSplitted[1];
+            if (directory.equals("..")) {
+                if (currDirectory.equals("/")) {
+                    sendMsgToClient("550 Can't go up from root directory");
+                } else {
+                    currDirectory = currDirectory.substring(0, currDirectory.lastIndexOf('/'));
+                    sendMsgToClient("250 Directory successfully changed");
+                }
+            } else {
+                File f = new File(currDirectory + "/" + directory);
+                if (f.exists() && f.isDirectory()) {
+                    currDirectory = currDirectory + "/" + directory;
+                    sendMsgToClient("250 Directory successfully changed");
+                } else {
+                    sendMsgToClient("550 Directory doesn't exist");
+                }
+            }
+        } else {
+            sendMsgToClient("550 Directory doesn't exist");
+        }
+    }
+
+    private void NLSThandler(String[] cSplitted) {
+        Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.NLST,cSplitted));
+        dataThread.start();
+    }
 
     private void USERhandler(String[] cSplitted){
         if (cSplitted.length > 1) {
@@ -211,7 +290,15 @@ public class ftpClientControlHandlerThread implements Runnable{
     }
     private void PASVhandler(String[] cSplitted) {
         currentTranferConnectionTypeStatus = transferConnectionStatus.PASSIVE;
-        sendMsgToClient("227 Server switched to passive mode");
+        //Trying to give a hint to the client on how to connect properly to the server in passive mode
+        String myIp = "127.0.0.1";
+        String myIpSplit[] = myIp.split("\\.");
+
+        int p1 = dataPort / 256;
+        int p2 = dataPort % 256;
+
+        sendMsgToClient("227 Entering Passive Mode (" + myIpSplit[0] + "," + myIpSplit[1] + "," + myIpSplit[2] + ","
+                + myIpSplit[3] + "," + p1 + "," + p2 + ")");
     }
     private void ACTVhandler(String[] cSplitted) {
         currentTranferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
@@ -221,7 +308,6 @@ public class ftpClientControlHandlerThread implements Runnable{
         if(currentuser.right != right.W)
         {
             Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.RETR,cSplitted));
-            sendMsgToClient("150 Opening binary mode data connection for requested file " + cSplitted[1]);
             dataThread.start();
         }
         else {
@@ -232,7 +318,6 @@ public class ftpClientControlHandlerThread implements Runnable{
         if(currentuser.right != right.R)
         {
             Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.STOR,cSplitted));
-            sendMsgToClient("150 Opening binary mode data connection for requested file " + cSplitted[1]);
             dataThread.start();
         }
         else
@@ -243,7 +328,9 @@ public class ftpClientControlHandlerThread implements Runnable{
     private void QUIThandler(String[] cSplitted){
         this.quitCommandLoop = true;
     }
-    private void sendMsgToClient(String s){
+//endregion
+//region Class Functions tdr: Here are the functions that are used by the data Socket thread and the control Socket
+    public void sendMsgToClient(String s){
         try
         {
             ConsoleLogging(s);
@@ -254,15 +341,54 @@ public class ftpClientControlHandlerThread implements Runnable{
             Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
         }
     }
-    //region Manage Connection for Data Transfer
-    //TODO Re-Implement that in a thread
-
-    /**
-     * Simple "Macro" Managing the console log
-     * @param log String containing the message that is needed to be displayed on the console
-     */
-    private void ConsoleLogging(String log)
-    {
-        System.out.println("Thread " + Thread.currentThread().getId() + " at " + java.time.LocalDateTime.now().getHour()+":"+java.time.LocalDateTime.now().getMinute()+ ":"+ java.time.LocalDateTime.now().getSecond() + " : " +  log);
+    public String getCurrentUser()
+{
+        return currentuser.username;
     }
+    public String getCurrentUsersRightsPosix() {
+        //I used chatGPT to have the default posix formatting in Java for that kind of use
+        String permission = "";
+        switch (currentuser.right) {
+            case R -> {
+                Set<PosixFilePermission> permissions = EnumSet.of(
+                        PosixFilePermission.OWNER_READ,
+                        PosixFilePermission.GROUP_READ,
+                        PosixFilePermission.OTHERS_READ
+                );
+                permission = PosixFilePermissions.toString(permissions);
+            }
+            case W -> {
+                Set<PosixFilePermission> permissions = EnumSet.of(
+                        PosixFilePermission.OWNER_WRITE,
+                        PosixFilePermission.GROUP_WRITE,
+                        PosixFilePermission.OTHERS_WRITE
+                );
+                permission = PosixFilePermissions.toString(permissions);
+            }
+            case RW -> {
+                Set<PosixFilePermission> permissions = EnumSet.of(
+                        PosixFilePermission.OWNER_READ,
+                        PosixFilePermission.OWNER_WRITE,
+                        PosixFilePermission.GROUP_READ,
+                        PosixFilePermission.GROUP_WRITE,
+                        PosixFilePermission.OTHERS_READ,
+                        PosixFilePermission.OTHERS_WRITE
+                );
+                permission = PosixFilePermissions.toString(permissions);
+            }
+        }
+        return permission;
+    }
+//endregion
+//region Helper Functions
+/**
+ * Simple "Macro" Managing the console log
+ * @param log String containing the message that is needed to be displayed on the console
+ */
+private void ConsoleLogging(String log)
+{
+    System.out.println("Thread " + Thread.currentThread().getId() + " at " + java.time.LocalDateTime.now().getHour()+":"+java.time.LocalDateTime.now().getMinute()+ ":"+ java.time.LocalDateTime.now().getSecond() + " : " +  log);
+}
+//endregion
+
 }

@@ -43,11 +43,12 @@
             {
                 System.out.println("Created Directory Containing HTML files");
             }
-            System.out.println("New http/https request Received");
+
             this.socket = s;
         }
         @Override
         public void run() {
+            System.out.println("Http Thread Initialised : " + socket.getInetAddress() + ':' + socket.getPort());
             try {
                 input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 output = new DataOutputStream(socket.getOutputStream());
@@ -66,21 +67,12 @@
                     }
                 }
                 //when the whole command is read we go to appropriate functions
-                String[] s_splitted = header_list.get(0).split(" ");
-                switch(s_splitted[0])
-                {
-                    case "GET":
-                        this.GEThandler(s_splitted,header_list,body_list,output);
-                        break;
-                    case "HEAD":
-                        this.HEADhandler(s_splitted,header_list,body_list,output);
-                        break;
-                    case "POST":
-                        this.POSThandler(s_splitted,header_list,body_list,output);
-                        break;
-                    default:
-                        this.NOTSUPPORTEDdhandler(s_splitted,header_list,body_list,output);
-                        break;
+                String[] s_split = header_list.get(0).split(" ");
+                switch (s_split[0]) {
+                    case "GET" -> this.GEThandler(s_split, header_list, body_list, output);
+                    case "HEAD" -> this.HEADhandler(s_split, header_list, body_list, output);
+                    case "POST" -> this.POSThandler(s_split, header_list, body_list, output);
+                    default -> this.NOTSUPPORTEDdhandler(s_split, header_list, body_list, output);
                 }
                 output.flush();
                 socket.close();
