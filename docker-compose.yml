@@ -1,22 +1,39 @@
 version: '3'
 services:
+
+  compile:
+    build: project1_vacationcenter2-compile:latest
+    volumes:
+      - .:/app
+    command: bash -c "make all"
+  
   postgres-activities:
-    image: project1vacationcenter2_postgresql:latest
+    build: ./src/docker/postgres-activities
     environment:
+      -  POSTGRES_USER=postgres
       -  POSTGRES_PASSWORD=password
     ports:
       - "5432:5432"
     volumes:
       - ./data:/var/lib/postgresql/data
   auth_server:
-    image: project1vacationcenter2_auth_server:latest
+    build: ./src/docker/auth_server
     ports:
       - "5050:5050"
     volumes:
       - ./data:/opt/auth_server/data
+    depends_on:
+      - compile
   custom_http_server:
-    image: project1vacationcenter2_custom_http_server:latest
+    build: ./src/docker/custom_http_server
     ports:
       - "8090:8090"
+      - "8091:8091"
+      - "21:21"
+      - "990:990"
     volumes:
-      - ./www:/opt/custom_http_server/www
+      - ./www:/opt/custom_http_server/www:z
+      - ./logs:/opt/custom_http_server/logs:z
+      - ./ssl:/opt/custom_http_server/ssl:z
+    depends_on:
+      - compile
