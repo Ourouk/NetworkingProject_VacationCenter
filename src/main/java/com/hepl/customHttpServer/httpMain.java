@@ -12,13 +12,13 @@ public class httpMain implements Runnable{
         int port = 8090;
         int ssl_port = 8091;
 
-        socketListener listener_thread = new socketListener(port,4);
+        socketListener listener_thread = new socketListener(port,4, socketListener.availableHandler.httpClientHandlerThread);
         //This code launch both socket to receive connection
         Thread http_listening_thread = new Thread(listener_thread);
         http_listening_thread.start();
         System.out.println("The server url is http://127.0.0.1:"+port);
 
-        secureSocketListener SSLlistener_thread = new secureSocketListener(ssl_port,4,false, secureSocketListener.availableHandler.ftpClientHandlerThread);
+        secureSocketListener SSLlistener_thread = new secureSocketListener(ssl_port,1,false, secureSocketListener.availableHandler.httpClientHandlerThread);
         Thread https_listener_thread = new Thread(SSLlistener_thread);
         https_listener_thread.start();
 

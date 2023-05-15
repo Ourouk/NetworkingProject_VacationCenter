@@ -24,18 +24,26 @@ public class httpResponseBuilder {
         this.setContent(Content);
         this.setSize(this.getContent().length);
     }
+    public httpResponseBuilder(byte[] Content,String content_type)
+    {
+        this.CreateDefaultHeader();
+        if(!content_type.isBlank())
+            this.setContent_type(content_type);
+        this.setContent(Content);
+        this.setSize(this.getContent().length);
+    }
     private void CreateDefaultHeader()
     {
         this.setVersion("HTTP/1.1");
         this.setCode(200);
-        this.setHumand_readable_code("ok");
+        this.setHuman_readable_code("ok");
         this.setContent_type("Content-Type: text/html; charset=utf-8");
     }
     public void send(DataOutputStream o) throws IOException
     {
         //DONE FIX THE MISUNDERSTANDING OF the content length
         BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
-        out.write(this.getVersion() + " " + this.getCode() + " " + this.getHumand_readable_code() + "\r\n");
+        out.write(this.getVersion() + " " + this.getCode() + " " + this.getHuman_readable_code() + "\r\n");
         out.write(this.getContent_type() +"\r\n");
         out.write("Content-Length: " + this.getSize() + "\r\n\r\n");
         for (byte b : this.getContent()) {
@@ -72,17 +80,17 @@ public class httpResponseBuilder {
     }
 
     /**
-     * @return the humand_readable_code
+     * @return the human_readable_code
      */
-    public String getHumand_readable_code() {
-        return humand_readable_code;
+    public String getHuman_readable_code() {
+        return human_readable_code;
     }
 
     /**
-     * @param humand_readable_code the humand_readable_code to set
+     * @param human_readable_code the human_readable_code to set
      */
-    public void setHumand_readable_code(String humand_readable_code) {
-        this.humand_readable_code = humand_readable_code;
+    public void setHuman_readable_code(String human_readable_code) {
+        this.human_readable_code = human_readable_code;
     }
 
     /**
@@ -133,7 +141,7 @@ public class httpResponseBuilder {
     
     private String version;
     private int code;
-    private String humand_readable_code;
+    private String human_readable_code;
     private String content_type;
     private int size;
     private byte[] content;
