@@ -215,7 +215,6 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         if (args != null) {
             filename = filename + File.separator + args;
         }
-
         // Now get a File object, and see if the name we got exists and is a
         // directory.
         File f = new File(filename);

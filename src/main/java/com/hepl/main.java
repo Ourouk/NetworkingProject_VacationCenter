@@ -17,6 +17,6 @@ public class main {
         ftpMain ftp_server = new ftpMain();
         httpMain http_server = new httpMain();
         http_server.run();
-        ftp_server.run();
+       // ftp_server.run();
     }
 }

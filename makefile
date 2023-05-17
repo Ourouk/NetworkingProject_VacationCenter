@@ -9,13 +9,9 @@ CFLAGS = -g -Wall -D DEBUG
 
 all: c_build java_build
 
-docker:
-	docker build --pull --rm -f "src/docker/customhttpserver/customhttpserver.dockerfile" -t project1vacationcenter2_custom_http_server:latest "./";
-	docker build --pull --rm -f "src/docker/auth_server/authentificationServer.dockerfile" -t project1vacationcenter2_auth_server:latest "./";
-	docker build --pull --rm -f "src/docker/sql-storage/postgreSQL.dockerfile" -t project1vacationcenter2_postgresql:latest "./";
-	
-docker_compose : docker
+docker_compose : all
 	docker-compose -f src/docker/docker-compose.yml up -d
+
 c_build: auth_server auth_client
 java_build: customhttpserver
 
@@ -23,11 +19,13 @@ java_build: customhttpserver
 
 # Java
 customhttpserver: 
-	mvn compile;
 	mvn package;
+	cp $(TARGET)/Project1_VacationCenter2-1.0-SNAPSHOT.jar $(SRC)/docker/custom_http_server
 # C++
 auth_server: $(SRC)/auth_server.cpp Customer.o Customers.o Command.o aes.o hmac_sha256.o sha256.o
 	$(COMPILER_CPP) $(CFLAGS) $(SRC)/auth_server.cpp $(TARGET)/Customer.o $(TARGET)/Customers.o $(TARGET)/Command.o $(TARGET)/aes.o -o $(TARGET)/auth_server
+# Dirty fix
+	cp $(TARGET)/auth_server  $(SRC)/docker/auth_server/
 
 auth_client: $(SRC)/auth_client.cpp Customer.o Customers.o Command.o aes.o aes.o hmac_sha256.o sha256.o
 	$(COMPILER_CPP) $(CFLAGS) $(SRC)/auth_client.cpp $(TARGET)/Customer.o $(TARGET)/Customers.o $(TARGET)/Command.o $(TARGET)/aes.o -o $(TARGET)/auth_client

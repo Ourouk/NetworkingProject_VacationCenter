@@ -211,21 +211,40 @@ public class ftpClientControlHandlerThread implements Runnable{
     private void CWDhandler(String[] cSplit) {
         if (cSplit.length > 1) {
             String directory = cSplit[1];
+            switch(directory)
+            {
+                case "/":
+                    currDirectory = "/";
+                    sendMsgToClient("250 Directory successfully changed");
+                    break;
+                case "..":
+                    if (currDirectory.equals("/")) {
+                        sendMsgToClient("550 Can't go up from root directory");
+                    } else {
+                        currDirectory = currDirectory.substring(0, currDirectory.lastIndexOf('/'));
+                        sendMsgToClient("250 Directory successfully changed");
+                    }
+                    break;
+                default:
+                    File f = new File(currDirectory + File.separator + directory);
+                    if (f.exists() && f.isDirectory()) {
+                        currDirectory = currDirectory +  File.separator + directory;
+                        sendMsgToClient("250 Directory successfully changed");
+                    } else {
+                        sendMsgToClient("550 Directory doesn't exist");
+                    }
+                    break;
+            }
             if (directory.equals("..")) {
-                if (currDirectory.equals("/")) {
-                    sendMsgToClient("550 Can't go up from root directory");
-                } else {
-                    currDirectory = currDirectory.substring(0, currDirectory.lastIndexOf('/'));
-                    sendMsgToClient("250 Directory successfully changed");
-                }
+
             } else {
-                File f = new File(currDirectory + "/" + directory);
-                if (f.exists() && f.isDirectory()) {
-                    currDirectory = currDirectory + "/" + directory;
-                    sendMsgToClient("250 Directory successfully changed");
-                } else {
-                    sendMsgToClient("550 Directory doesn't exist");
-                }
+                    File f = new File(currDirectory + "/" + directory);
+                    if (f.exists() && f.isDirectory()) {
+                        currDirectory = currDirectory + "/" + directory;
+                        sendMsgToClient("250 Directory successfully changed");
+                    } else {
+                        sendMsgToClient("550 Directory doesn't exist");
+                    }
             }
         } else {
             sendMsgToClient("550 Directory doesn't exist");
