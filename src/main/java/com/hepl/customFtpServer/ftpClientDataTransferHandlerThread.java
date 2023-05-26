@@ -1,5 +1,7 @@
 package com.hepl.customFtpServer;
 
+import com.hepl.Logger;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -69,7 +71,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         }
     }
     private Socket createDataConnection() {
-        ConsoleLogging("Creating data connection on " + controller.dataIP + ":" + controller.dataPort);
+        Logger.log("Creating data connection on " + controller.dataIP + ":" + controller.dataPort);
         try {
             Socket socket = null;
             switch (controller.currentCryptStatus) {
@@ -140,7 +142,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
     //region Interaction with file system
     private void storFile(File file)
     {
-        ConsoleLogging("Storing file" + file.getName());
+        Logger.log("Storing file" + file.getName());
         if(file.isFile()) {
             byte[] buffer = new byte[8192];
             int read_lenght;
@@ -158,7 +160,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
     }
     private void retrFile(File file)
     {
-        ConsoleLogging("Retrieving file: " + file.getAbsolutePath());
+        Logger.log("Retrieving file: " + file.getAbsolutePath());
         if(file.isFile()) {
             byte[] buffer = new byte[8192];
             int read_lenght;
@@ -215,7 +217,6 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         if (args != null) {
             filename = filename + File.separator + args;
         }
-
         // Now get a File object, and see if the name we got exists and is a
         // directory.
         File f = new File(filename);
@@ -236,16 +237,6 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         System.out.println(msg);
         dataOutWriter.write((msg + '\n').getBytes());
         dataOutWriter.flush();
-    }
-//endregion
-//region Helper Functions
-    /**
-     * Simple "Macro" Managing the console log
-     * @param log String containing the message that is needed to be displayed on the console
-     */
-    private void ConsoleLogging(String log)
-    {
-        System.out.println("Thread " + Thread.currentThread().getId() + " at " + java.time.LocalDateTime.now().getHour()+":"+java.time.LocalDateTime.now().getMinute()+ ":"+ java.time.LocalDateTime.now().getSecond() + " : " +  log);
     }
 //endregion
 }

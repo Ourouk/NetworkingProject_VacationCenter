@@ -1,21 +1,22 @@
 version: '3'
 services:
   postgres-activities:
-    image: project1vacationcenter2_postgresql:latest
+    build: ./src/docker/postgres-activities
     environment:
+      -  POSTGRES_USER=postgres
       -  POSTGRES_PASSWORD=password
     ports:
       - "5432:5432"
     volumes:
       - ./data:/var/lib/postgresql/data
   auth_server:
-    image: project1vacationcenter2_auth_server:latest
+    build: ./src/docker/auth_server
     ports:
       - "5050:5050"
     volumes:
       - ./data:/opt/auth_server/data
   custom_http_server:
-    image: project1vacationcenter2_custom_http_server:latest
+    build: ./src/docker/custom_http_server
     ports:
       - "8090:8090"
     volumes:

@@ -4,9 +4,11 @@
  */
 package com.hepl.customHttpServer;
 
+import com.hepl.Logger;
 import com.hepl.customHttpServer.PostgresqlJdbcLibrary.PostgresqlJdbcLibrary;
-import com.hepl.customHttpServer.authServerConnector.authClient;
-import com.hepl.customHttpServer.authServerConnector.data.Customer;
+
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,25 +23,49 @@ import java.util.HashMap;
  * @author Andrea
  */
 public class httpSmartHttpHandler {
-    private Path File;
+    private httpClientHandlerThread httpClientHandlerThread;
+    private Path file;
+    private FileReader fileReader;
     private Boolean isSmart;
-    private HashMap parsedParameters;
 
     /**
-     * @return the File
+     *
+     * @param path to the file to be sent
+     */
+    public httpSmartHttpHandler(httpClientHandlerThread httpClient,Path path)
+    {
+        this.httpClientHandlerThread = httpClient;
+        this.setFile(path);
+    }
+
+    /**
+     * Note : This Method contains the smart file detector
+     * @param file_path The path to the file to set
+     */
+    private void setFile(Path file_path) {
+        Path path;
+        if(file_path.toFile().exists())
+            path = file_path;
+        else
+            path = com.hepl.customHttpServer.httpClientHandlerThread.FILE_NOT_FOUND.toPath();
+
+        String[] split = path.getFileName().toString().split("[.]");
+            setIsSmart(split[1]);
+        this.file = file_path;
+        try {
+            this.fileReader = new FileReader(this.file.toFile());
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    /**
+     * @return the file path
      */
     public Path getFile() {
-        return File;
+        return file;
     }
 
-    /**
-     * @param File the File to set
-     */
-    private void setFile(Path File) {
-        String[] split = File.toUri().getPath().split("[.]");
-        setIsSmart(split[1]);
-        this.File = File;
-    }
+
     /**
      * @param FileType the FileType to set
      * Here we can parse differently certains types of files depending on their type
@@ -53,29 +79,26 @@ public class httpSmartHttpHandler {
                 this.isSmart = false;
         }
     }
-    /**
-     * @param parsedParameters the parsedParameters to set
-     */
-    public void setParsedParameters(HashMap parsedParameters) {
-        this.parsedParameters = parsedParameters;
-    }
-    
-    public httpSmartHttpHandler(Path path)
-    {
-        this.setFile(path);
-    }
+
     
     public byte[] getFileContent() throws IOException
     {
-        byte[] filecontent = Files.readAllBytes(File);
         if(this.isSmart)
-            filecontent = this.smartHandler(filecontent);
-        return filecontent;
+            return smartInjectionHandler(Files.readAllBytes(file));
+        else {
+            return Files.readAllBytes(file);
+        }
     }
-    
-    
-    //The smart Handler assume that You use only one time each function
-    private byte[]  smartHandler(byte[] filecontent) throws IOException {
+
+
+    /**
+     *
+     * @param filecontent //Contain the all the content from the shtml file
+     * @return modified filecontent
+     * @throws IOException
+     */
+    private byte[] smartInjectionHandler(byte[] filecontent) throws IOException {
+        byte[] new_filecontent;
         String buff = new String(filecontent);
         StringBuilder builder = new StringBuilder();
         for(String s : listOfAvailablesFunctions)
@@ -87,58 +110,61 @@ public class httpSmartHttpHandler {
                     builder.append(split[0]);
                     builder.append(htmltoAdd);
                     builder.append(split[1]);
+                buff = builder.toString();
             }
         }
-        return filecontent;
+        new_filecontent = buff.getBytes();
+        return new_filecontent;
     }
     
-
+    // All Smart Handler should be added in the two next method and create a new function to add the content.
     private String[] listOfAvailablesFunctions = new String[]{"<!-- Add Here all available Activities -->"};
     
     private String functionCaller(String s) throws IOException {
         switch(s)
         {
             case "<!-- Add Here all available Activities -->":
-                return availableActivitiesForm(parsedParameters);
+                return availableActivitiesForm();
             default:
                 System.out.println("Error you have called an unset function");
+                return null;
         }
-
-        return null;
     }
 
-    private String availableActivitiesForm(HashMap parsedParameters){
-        System.out.println("Trying to fetch information from the auth_server");
-        //Check if the users is present in the server Database;
+    private String availableActivitiesForm(){
+        Logger.log("Function availableActivitiesForm activated, trying to inject code in " + file.toString());
+        HashMap parsedParameters = this.body_parser(httpClientHandlerThread.requestBody);
+
         String id = (String) parsedParameters.get("id");
         String to_add = new String();
-        System.out.println("");
+        //Check if the users is present in the server Database;
         if (!id.isBlank()) {
-            try {
-                authClient authClient = new authClient("127.0.0.1", 5050);
-                Customer customer = authClient.getCustomer(id);
-                to_add += "<h1>Choose Activity for user : " + customer.getName() + customer.getSurname() + "</h1>" + "\r\n";
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+//            httpClientHandlerThread.ConsoleLogging("Trying to find the users " + id + " inside the Server Database");
+//            try {
+//                authClient authClient = new authClient("127.0.0.1", 5050);
+//                Customer customer = authClient.getCustomer(id);
+//                to_add += "<h1>Choose Activity for user : " + customer.getName() + customer.getSurname() + "</h1>" + "\r\n";
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
             to_add += "<p>Select Activities you want to participate to :</p>" + "\r\n" +
                     "<!-- Add Here all available Activities -->" + "\r\n";
             try {
-                Connection pg = PostgresqlJdbcLibrary.getConnection();
-                Statement statement = pg.createStatement();
-                //Download the available activities from the SQL Database;
-                System.out.println("Trying to fetch information from the postgresql_server");
-                ResultSet resultSet = statement.executeQuery("SELECT * FROM activities");
-                if (resultSet != null) {
-                    to_add += "<form action=\"activitie_selected.html\" method=\"post\">";
-                    while (resultSet.next()) {
-                        to_add += "<input type=\"checkbox\"id=\"" + resultSet.getString("name") + "\"name=\"" + resultSet.getString("name") + "\"value=\"Bike\">";
-                        to_add += "<label for=\"" + resultSet.getString("name") + "\">" + resultSet.getString("name") + "</label><br>";
-                    }
-                    to_add += "<input name=\"Submit_button\" type=\"submit\" value=\"Submit\" />" + "\r\n" +
-                            "</form>" + "\r\n";
-                    resultSet.close();
+            Connection pg = PostgresqlJdbcLibrary.getConnection();
+            Statement statement = pg.createStatement();
+            //Download the available activities from the SQL Database;
+            Logger.log("Trying to fetch information from the postgresql_server");
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM activities");
+            if (resultSet != null) {
+                to_add += "<form action=\"activitie_selected.html\" method=\"post\">";
+                while (resultSet.next()) {
+                    to_add += "<input type=\"checkbox\"id=\"" + resultSet.getString("name") + "\"name=\"" + resultSet.getString("name") + "\"value=\"Bike\">";
+                    to_add += "<label for=\"" + resultSet.getString("name") + "\">" + resultSet.getString("name") + "</label><br>";
                 }
+                to_add += "<input name=\"Submit_button\" type=\"submit\" value=\"Submit\" />" + "\r\n" +
+                        "</form>" + "\r\n";
+                resultSet.close();
+            }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -146,7 +172,16 @@ public class httpSmartHttpHandler {
         else {
             to_add += "<h1>No Id entered!</h1>";
         }
-
         return to_add;
+    }
+    private HashMap body_parser(String body)
+    {
+        HashMap form_hashmap = new HashMap();
+        String[] body_list = httpClientHandlerThread.requestBody.split("\n");
+        for (String line: body_list) {
+            String[] split_key = line.split("=");
+            form_hashmap.put(split_key[0], split_key[1]);
+        }
+        return form_hashmap;
     }
 }

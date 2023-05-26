@@ -3,20 +3,21 @@
      * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
      */
     package com.hepl.customHttpServer;
+    import com.hepl.Logger;
     import com.hepl.socket.crypto.ssl.secureSocketListener;
 
     import java.io.IOException;
     import java.net.*;
     import java.io.*;
     import java.nio.file.Files;
+    import java.nio.file.Path;
     import java.nio.file.Paths;
     import java.util.HashMap;
-    import java.util.ArrayList;
 
-    import java.util.List;
+    import java.util.Map;
     import java.util.logging.FileHandler;
     import java.util.logging.Level;
-    import java.util.logging.Logger;
+
     /**
      *
      * @author Andrea
@@ -26,142 +27,153 @@
         private BufferedReader input = null;
         private DataOutputStream output = null;
 
-        static final File WEB_ROOT = new File("www");
-        static final String DEFAULT_FILE = "index.html";
-        static final String FILE_NOT_FOUND = "404.html";
-        static final String METHOD_NOT_SUPPORTED = "not_supported.html";
+
+
+        //Default files
+        static final File DIR_ROOT = new File("www");
+        static final File DEFAULT_FILE = new File(DIR_ROOT.getAbsolutePath(),"index.html");
+        static final File FILE_NOT_FOUND = new File(DIR_ROOT.getAbsolutePath(),"404.html");
+        static final File METHOD_NOT_SUPPORTED = new File(DIR_ROOT.getAbsolutePath(),"not_supported.html");
+
+        //Http request parsing variables
+        private String httpMethod;
+        private String httpPath;
+        private String httpVersion;
+        private String httpParts[];
+        private String requestLine[];
+        public String requestBody;
+
+
+
+
+
+        private Map<String,String> httpHeaders = new HashMap<String,String>();
+
+
 
         public httpClientHandlerThread(Socket s)
         {
-            Logger logger = Logger.getLogger(secureSocketListener.class.getName());
+            java.util.logging.Logger logger = java.util.logging.Logger.getLogger(secureSocketListener.class.getName());
             try {
                 logger.addHandler(new FileHandler("logs/" + "https_server_thread" + ".log"));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            if(WEB_ROOT.mkdir())
-            {
-                System.out.println("Created Directory Containing HTML files");
-            }
 
+            if(DIR_ROOT.mkdir())
+            {
+                Logger.log("Created Directory Containing HTML files");
+            }
             this.socket = s;
         }
         @Override
         public void run() {
-            System.out.println("Http Thread Initialised : " + socket.getInetAddress() + ':' + socket.getPort());
+            Logger.log("Http Thread Initialised : " + socket.getInetAddress().getHostAddress() + ':' + socket.getPort());
             try {
                 input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 output = new DataOutputStream(socket.getOutputStream());
-                int i = 0;
-                String header = "",body ="",line = null,content = "";
 
-                List<String> header_list =  new ArrayList<String>(),body_list=new ArrayList<String>();
-                Boolean isbody = false;
                 //Read the whole content
-                while ((line = input.readLine()) != null && !line.isEmpty()) {
-                    header_list.add(line);
-                }
-                if(input.ready()) {
-                    while ((line = input.readLine()) != null && !line.isEmpty()) {
-                        body_list.add(line);
+                StringBuilder sb = new StringBuilder();
+                String inputLine; int emptyline =0;
+                while ((inputLine = input.readLine()) != null) {
+                    sb.append(inputLine);
+                    sb.append("\r\n");
+                    if (inputLine.isEmpty()) {
+                            break;
                     }
                 }
-                //when the whole command is read we go to appropriate functions
-                String[] s_split = header_list.get(0).split(" ");
-                switch (s_split[0]) {
-                    case "GET" -> this.GEThandler(s_split, header_list, body_list, output);
-                    case "HEAD" -> this.HEADhandler(s_split, header_list, body_list, output);
-                    case "POST" -> this.POSThandler(s_split, header_list, body_list, output);
-                    default -> this.NOTSUPPORTEDdhandler(s_split, header_list, body_list, output);
+                String httpCommand = sb.toString();
+
+                // Parse the HTTP command
+                httpParts = httpCommand.split("\r\n");
+                requestLine = httpParts[0].split("\\s+");
+                httpMethod = requestLine[0];
+                httpPath = requestLine[1];
+                httpVersion = requestLine[2];
+                httpHeaders = new HashMap<>();
+                for (int i = 1; i < httpParts.length - 1; i++) {
+                    String[] header = httpParts[i].split(":\\s+");
+                    httpHeaders.put(header[0], header[1]);
+                }
+                if(httpMethod.equals("POST"))
+                {
+                    StringBuilder sb_body = new StringBuilder();
+                    try {
+                        int numChars = Integer.parseInt(httpHeaders.get("Content-Length"));
+                        char[] buff = new char[numChars];
+                        int numRead = 0;
+                        while (numRead < numChars) {
+                            int count = input.read(buff, numRead, numChars - numRead);
+                            numRead += count;
+                        }
+                        requestBody = new String(buff);
+                    }catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }else {
+                    requestBody = "";
+                }
+
+                Logger.log("Receive Command : \n" + httpCommand);
+                Logger.log("Receive POST Body : \n" + requestBody);
+                switch (httpMethod) {
+                    case "GET" -> this.GEThandler();
+//                    case "HEAD" -> this.HEADhandler();
+                    case "POST" -> this.POSThandler();
+                    default -> this.NOTSUPPORTEDdhandler();
                 }
                 output.flush();
                 socket.close();
             }catch (Exception ex) {
                 ex.printStackTrace();
-                Logger.getLogger(httpClientHandlerThread.class.getName()).log(Level.SEVERE, null, ex);
+                java.util.logging.Logger.getLogger(httpClientHandlerThread.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        public void GEThandler(String[] command, List<String> header_list ,  List<String> body_list, DataOutputStream out) throws FileNotFoundException, IOException, SocketException
+        public void GEThandler() throws FileNotFoundException, IOException, SocketException
         {
-            String[] split_PathAndQuery = command[1].split("\\?");
-            httpSmartHttpHandler smarthttp;
-            //TODO Improve that it trigger me
-            if(split_PathAndQuery[0].contentEquals("/"))
-            {
-                smarthttp = new httpSmartHttpHandler(Paths.get(WEB_ROOT.getPath(),DEFAULT_FILE));
-                httpResponseBuilder response = new httpResponseBuilder(smarthttp.getFileContent());
-                response.send(out);
-            }else
-            {
-                if(Files.isReadable(Paths.get(WEB_ROOT.getPath(),split_PathAndQuery[0])))
-                {
-                    smarthttp = new httpSmartHttpHandler(Paths.get(WEB_ROOT.getPath(),split_PathAndQuery[0]));
-                    httpResponseBuilder response = new httpResponseBuilder(smarthttp.getFileContent());
-                    try {
-                        response.send(out);
-                    }catch (Exception ex)
-                    {
-                        Logger.getLogger(httpClientHandlerThread.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }else
-                {
-                    smarthttp = new httpSmartHttpHandler(Paths.get(WEB_ROOT.getPath(),FILE_NOT_FOUND));
-                    httpResponseBuilder response = new httpResponseBuilder(smarthttp.getFileContent());
-                    try {
-                        response.send(out);
-                    }catch (Exception ex)
-                    {
-                        Logger.getLogger(httpClientHandlerThread.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            }
-        }
-        public void HEADhandler(String[] command,List<String> header_list ,  List<String> body_list,DataOutputStream out) throws IOException {
-            this.GEThandler(command,header_list,body_list,out);
-        }
-        public void POSThandler(String[] command,List<String> header_list ,  List<String> body_list,DataOutputStream out) throws IOException
-        {
-            //Parsing form return
-            HashMap form_hashmap = new HashMap();
-            System.out.println(body_list);
-            for (String line: body_list) {
-                System.out.println(line);
-                String[] split_key = line.split("=");
-                form_hashmap.put(split_key[0], split_key[1]);
-            }
-            //Manage the return pages
+            Logger.log("Receive GET Command by " + socket.getInetAddress().getHostAddress() + " on \"" +  httpPath + "\"");
             httpSmartHttpHandler smartHttp;
-            String[] split_PathAndQuery = command[1].split("\\?"); //Give the destination
-            //TODO Improve that it trigger me
-            if(split_PathAndQuery[0].contentEquals("/"))
-            {   
-                smartHttp = new httpSmartHttpHandler(Paths.get(WEB_ROOT.getPath(),DEFAULT_FILE));
-                httpResponseBuilder response = new httpResponseBuilder(smartHttp.getFileContent());
-                response.send(out);
-            }else
-            {
-                if(Files.isReadable(Paths.get(WEB_ROOT.getPath(),split_PathAndQuery[0])))
-                {
-                    smartHttp = new httpSmartHttpHandler(Paths.get(WEB_ROOT.getPath(),split_PathAndQuery[0]));
-                    smartHttp.setParsedParameters(form_hashmap);
-                    httpResponseBuilder response = new httpResponseBuilder(smartHttp.getFileContent());
-                    response.send(out);
-                }else
-                {
-                    smartHttp = new httpSmartHttpHandler(Paths.get(WEB_ROOT.getPath(),FILE_NOT_FOUND));
-                    httpResponseBuilder response = new httpResponseBuilder(smartHttp.getFileContent());
-                    response.send(out);
-                }
-            }
+            smartHttp = new httpSmartHttpHandler(this,pathHandler());
+            httpResponseBuilder response = new httpResponseBuilder(smartHttp.getFileContent());
+            response.send(output);
         }
-        public void NOTSUPPORTEDdhandler(String[] command,List<String> header_list ,  List<String> body_list,DataOutputStream out) throws IOException
+//        public void HEADhandler() throws IOException
+//        {
+//            httpSmartHttpHandler smartHttp = new httpSmartHttpHandler(pathHandler().toPath());
+//            httpResponseBuilder response = new httpResponseBuilder(smartHttp.getFileContent());
+//            response.send(output);
+//        }
+        public void POSThandler() throws IOException
         {
-            httpResponseBuilder response = new httpResponseBuilder(Files.readAllBytes(Paths.get(WEB_ROOT.getPath(), METHOD_NOT_SUPPORTED)));
+            Logger.log("Receive POST Command by " + socket.getInetAddress().getHostAddress() + " on \"" +  httpPath + "\"");
+            httpSmartHttpHandler smartHttp = new httpSmartHttpHandler(this,pathHandler());
+            httpResponseBuilder response = new httpResponseBuilder(smartHttp.getFileContent());
+            response.send(output);
+        }
+        public void NOTSUPPORTEDdhandler() throws IOException
+        {
+            httpResponseBuilder response = new httpResponseBuilder(Files.readAllBytes(Paths.get(METHOD_NOT_SUPPORTED.getAbsolutePath())));
             try {
-                response.send(out);
+                response.send(output);
             }catch (Exception ex)
             {
-                Logger.getLogger(httpClientHandlerThread.class.getName()).log(Level.SEVERE, null, ex);
+                java.util.logging.Logger.getLogger(httpClientHandlerThread.class.getName()).log(Level.SEVERE, null, ex);
             }
+        }
+
+        /**
+         *
+         * @return
+         * @throws IOException
+         */
+        private Path pathHandler() throws IOException
+        {
+                Path file_path;
+                if(!this.httpPath.equals("/"))
+                    file_path = Paths.get(DIR_ROOT.getAbsolutePath(),httpPath);
+                else
+                     file_path = DEFAULT_FILE.toPath();
+                return file_path;
         }
     }

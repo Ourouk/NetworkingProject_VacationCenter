@@ -4,6 +4,10 @@ import com.hepl.socket.crypto.ssl.secureSocketListener;
 import com.hepl.socket.socketListener;
 
 public class ftpMain implements Runnable{
+    public ftpMain()
+    {
+
+    }
     @Override
     public void run() {
         System.out.println("Launching Custom FTP Server made in Java");
@@ -23,5 +27,4 @@ public class ftpMain implements Runnable{
 
         System.out.println("The secured server url is ftp://127.0.0.1:"+ssl_listen_port);
     }
-
 }

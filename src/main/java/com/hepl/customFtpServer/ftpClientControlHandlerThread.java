@@ -1,6 +1,8 @@
 package com.hepl.customFtpServer;
 
 
+import com.hepl.Logger;
+
 import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.net.Socket;
@@ -11,7 +13,6 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ftpClientControlHandlerThread implements Runnable{
     public String dataIP;
@@ -69,7 +70,7 @@ public class ftpClientControlHandlerThread implements Runnable{
         public right right;
         public User(String username,String password,right right)
         {
-            Logger logger = Logger.getLogger(ftpClientControlHandlerThread.class.getName());
+            java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ftpClientControlHandlerThread.class.getName());
             try {
                 logger.addHandler(new FileHandler("logs/" + "ftpClientHandlerThread" + ".log"));
             } catch (IOException e) {
@@ -130,16 +131,15 @@ public class ftpClientControlHandlerThread implements Runnable{
             this.users.add(new User("anonymous", "anonymous", right.R));
         }
         dataIP = s.getLocalAddress().getHostAddress(); //Default Ip address
+        dataPort = s.getLocalPort();
         //Set the default port
         if (sslContext == null) {
             currentCryptStatus = cryptStatus.PLAIN;
-            dataPort = 20;
         } else{
             currentCryptStatus = cryptStatus.TLS;
-            dataPort = 990;
         }
         try {
-            ConsoleLogging("Thread Initialised : " + s.getInetAddress().getHostAddress() +':'+  s.getLocalPort());
+            Logger.log("Thread Initialised : " + s.getInetAddress().getHostAddress() +':'+  s.getLocalPort());
             //Respond to the connection try
             BufferedReader socketReader = new BufferedReader(new InputStreamReader(s.getInputStream()));
             sendMsgToClient("220 Welcome to the Custom FTP-Server made by Andrea Spelgatti");
@@ -152,12 +152,12 @@ public class ftpClientControlHandlerThread implements Runnable{
                 }
             }
         } catch (Exception e) {
-            Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
+            java.util.logging.Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
         }
     }
     private void executeCommand(String c)
     {
-        ConsoleLogging(c);
+        Logger.log(c);
         String [] cSplit;
         if(c != null)
             cSplit = c.split(" ");
@@ -211,21 +211,40 @@ public class ftpClientControlHandlerThread implements Runnable{
     private void CWDhandler(String[] cSplit) {
         if (cSplit.length > 1) {
             String directory = cSplit[1];
+            switch(directory)
+            {
+                case "/":
+                    currDirectory = "/";
+                    sendMsgToClient("250 Directory successfully changed");
+                    break;
+                case "..":
+                    if (currDirectory.equals("/")) {
+                        sendMsgToClient("550 Can't go up from root directory");
+                    } else {
+                        currDirectory = currDirectory.substring(0, currDirectory.lastIndexOf('/'));
+                        sendMsgToClient("250 Directory successfully changed");
+                    }
+                    break;
+                default:
+                    File f = new File(currDirectory + File.separator + directory);
+                    if (f.exists() && f.isDirectory()) {
+                        currDirectory = currDirectory +  File.separator + directory;
+                        sendMsgToClient("250 Directory successfully changed");
+                    } else {
+                        sendMsgToClient("550 Directory doesn't exist");
+                    }
+                    break;
+            }
             if (directory.equals("..")) {
-                if (currDirectory.equals("/")) {
-                    sendMsgToClient("550 Can't go up from root directory");
-                } else {
-                    currDirectory = currDirectory.substring(0, currDirectory.lastIndexOf('/'));
-                    sendMsgToClient("250 Directory successfully changed");
-                }
+
             } else {
-                File f = new File(currDirectory + "/" + directory);
-                if (f.exists() && f.isDirectory()) {
-                    currDirectory = currDirectory + "/" + directory;
-                    sendMsgToClient("250 Directory successfully changed");
-                } else {
-                    sendMsgToClient("550 Directory doesn't exist");
-                }
+                    File f = new File(currDirectory + "/" + directory);
+                    if (f.exists() && f.isDirectory()) {
+                        currDirectory = currDirectory + "/" + directory;
+                        sendMsgToClient("250 Directory successfully changed");
+                    } else {
+                        sendMsgToClient("550 Directory doesn't exist");
+                    }
             }
         } else {
             sendMsgToClient("550 Directory doesn't exist");
@@ -316,12 +335,12 @@ public class ftpClientControlHandlerThread implements Runnable{
     public void sendMsgToClient(String s){
         try
         {
-            ConsoleLogging(s);
+            Logger.log(s);
             out.write(s+'\n');
             out.flush();
         } catch (Exception e)
         {
-            Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
+            java.util.logging.Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
         }
     }
     public String getCurrentUser()
@@ -363,15 +382,4 @@ public class ftpClientControlHandlerThread implements Runnable{
         return permission;
     }
 //endregion
-//region Helper Functions
-/**
- * Simple "Macro" Managing the console log
- * @param log String containing the message that is needed to be displayed on the console
- */
-private void ConsoleLogging(String log)
-{
-    System.out.println("Thread " + Thread.currentThread().getId() + " at " + java.time.LocalDateTime.now().getHour()+":"+java.time.LocalDateTime.now().getMinute()+ ":"+ java.time.LocalDateTime.now().getSecond() + " : " +  log);
-}
-//endregion
-
 }

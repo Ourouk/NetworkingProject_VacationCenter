@@ -5,6 +5,7 @@
 
 package com.hepl;
 
+import com.hepl.testing.testingMain;
 import com.hepl.customFtpServer.ftpMain;
 import com.hepl.customHttpServer.httpMain;
 /**
@@ -14,9 +15,15 @@ import com.hepl.customHttpServer.httpMain;
 public class main {
 
     public static void main(String[] args) {
-        ftpMain ftp_server = new ftpMain();
-        httpMain http_server = new httpMain();
-        http_server.run();
-        ftp_server.run();
+        /**
+         * Testing Function Must be removed from actual final product
+         */
+            testingMain.authServerConnectionTesting();
+
+
+//        ftpMain ftp_server = new ftpMain();
+//        httpMain http_server = new httpMain();
+//        http_server.run();
+//        ftp_server.run();
     }
 }

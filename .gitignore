@@ -254,7 +254,7 @@ fabric.properties
 .idea/**/azureSettings.xml
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij
-src/docker/sql-storage/data/*
+src/docker/postgres-activities/data/*
 
 
 target
