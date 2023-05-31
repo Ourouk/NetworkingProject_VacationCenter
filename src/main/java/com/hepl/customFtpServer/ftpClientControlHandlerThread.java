@@ -177,7 +177,7 @@ public class ftpClientControlHandlerThread implements Runnable{
             case "RETR" -> RETRhandler(cSplit);
             case "STOR" -> STORhandler(cSplit);
             case "QUIT" -> QUIThandler();
-            case default -> sendMsgToClient("500 Command not implemented :" + Command);
+            default -> sendMsgToClient("500 Command not implemented :" + Command);
         }
     }
 

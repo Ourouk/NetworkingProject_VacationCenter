@@ -11,6 +11,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.*;
+
 //Note this class is there to create a listening socket in ssl, I generated
 // keytool -genkeypair -alias server -keyalg RSA -keysize 2048 -validity 365 -keystore server_keystore.jks
 // keytool -exportcert -alias server -keystore server_keystore.jks -file server_certificate.cer

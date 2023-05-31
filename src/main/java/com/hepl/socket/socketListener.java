@@ -61,7 +61,7 @@ public class socketListener implements Runnable{
         try {
             serverSocket = new ServerSocket(port);
         } catch (IOException ex) {
-            Logger.getLogger(socketListener.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
        while(true)
        {

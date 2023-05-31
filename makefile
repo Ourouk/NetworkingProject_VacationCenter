@@ -9,13 +9,9 @@ CFLAGS = -g -Wall -D DEBUG
 
 all: c_build java_build
 
-docker:
-	docker build --pull --rm -f "src/docker/customhttpserver/customhttpserver.dockerfile" -t project1vacationcenter2_custom_http_server:latest "./";
-	docker build --pull --rm -f "src/docker/auth_server/authentificationServer.dockerfile" -t project1vacationcenter2_auth_server:latest "./";
-	docker build --pull --rm -f "src/docker/sql-storage/postgreSQL.dockerfile" -t project1vacationcenter2_postgresql:latest "./";
-	
-docker_compose : docker
+docker_compose : all
 	docker-compose -f src/docker/docker-compose.yml up -d
+
 c_build: auth_server auth_client
 java_build: customhttpserver
 
