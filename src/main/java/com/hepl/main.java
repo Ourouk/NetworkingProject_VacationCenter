@@ -8,22 +8,22 @@ package com.hepl;
 import com.hepl.testing.testingMain;
 import com.hepl.customFtpServer.ftpMain;
 import com.hepl.customHttpServer.httpMain;
-/**
+    /**
  *
  * @author Andrea
  */
 public class main {
 
     public static void main(String[] args) {
-        /**
-         * Testing Function Must be removed from actual final product
-         */
-            testingMain.authServerConnectionTesting();
+//        /**
+//         * Testing Function Must be removed from actual final product
+//         */
+//        testingMain.authServerConnectionTesting() //Testing still needed
+//        testingMain.smtpClientTesting(); // Done
 
-
-//        ftpMain ftp_server = new ftpMain();
-//        httpMain http_server = new httpMain();
-//        http_server.run();
-//        ftp_server.run();
+        ftpMain ftp_server = new ftpMain();
+        httpMain http_server = new httpMain();
+        http_server.run();
+        ftp_server.run();
     }
 }
