@@ -1,5 +1,12 @@
 version: '3'
 services:
+
+  compile:
+    build: project1_vacationcenter2-compile:latest
+    volumes:
+      - .:/app
+    command: bash -c "make all"
+  
   postgres-activities:
     build: ./src/docker/postgres-activities
     environment:
@@ -15,9 +22,18 @@ services:
       - "5050:5050"
     volumes:
       - ./data:/opt/auth_server/data
+    depends_on:
+      - compile
   custom_http_server:
     build: ./src/docker/custom_http_server
     ports:
       - "8090:8090"
+      - "8091:8091"
+      - "21:21"
+      - "990:990"
     volumes:
-      - ./www:/opt/custom_http_server/www
+      - ./www:/opt/custom_http_server/www:z
+      - ./logs:/opt/custom_http_server/logs:z
+      - ./ssl:/opt/custom_http_server/ssl:z
+    depends_on:
+      - compile
