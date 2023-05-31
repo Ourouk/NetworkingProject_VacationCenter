@@ -266,3 +266,5 @@ login.csv
 ftp/
 www/
 logs/
+
+ssl/
