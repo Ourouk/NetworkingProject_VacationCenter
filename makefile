@@ -19,11 +19,13 @@ java_build: customhttpserver
 
 # Java
 customhttpserver: 
-	mvn compile;
 	mvn package;
+	cp $(TARGET)/Project1_VacationCenter2-1.0-SNAPSHOT.jar $(SRC)/docker/custom_http_server
 # C++
 auth_server: $(SRC)/auth_server.cpp Customer.o Customers.o Command.o aes.o hmac_sha256.o sha256.o
 	$(COMPILER_CPP) $(CFLAGS) $(SRC)/auth_server.cpp $(TARGET)/Customer.o $(TARGET)/Customers.o $(TARGET)/Command.o $(TARGET)/aes.o -o $(TARGET)/auth_server
+# Dirty fix
+	cp $(TARGET)/auth_server  $(SRC)/docker/auth_server/
 
 auth_client: $(SRC)/auth_client.cpp Customer.o Customers.o Command.o aes.o aes.o hmac_sha256.o sha256.o
 	$(COMPILER_CPP) $(CFLAGS) $(SRC)/auth_client.cpp $(TARGET)/Customer.o $(TARGET)/Customers.o $(TARGET)/Command.o $(TARGET)/aes.o -o $(TARGET)/auth_client

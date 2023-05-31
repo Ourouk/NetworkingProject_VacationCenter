@@ -6,6 +6,9 @@ package com.hepl.customHttpServer;
 
 import com.hepl.Logger;
 import com.hepl.customHttpServer.PostgresqlJdbcLibrary.PostgresqlJdbcLibrary;
+import com.hepl.customHttpServer.authServerConnector.authClient;
+import com.hepl.customHttpServer.authServerConnector.data.Customer;
+import com.hepl.customSmtpClient.smtpSender;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -118,13 +121,15 @@ public class httpSmartHttpHandler {
     }
     
     // All Smart Handler should be added in the two next method and create a new function to add the content.
-    private String[] listOfAvailablesFunctions = new String[]{"<!-- Add Here all available Activities -->"};
+    private String[] listOfAvailablesFunctions = new String[]{"<!-- Add Here all available Activities -->","Error you have called an unset function"};
     
     private String functionCaller(String s) throws IOException {
         switch(s)
         {
             case "<!-- Add Here all available Activities -->":
                 return availableActivitiesForm();
+            case "<!-- Add Here the mail sent -->":
+                return mailsent();
             default:
                 System.out.println("Error you have called an unset function");
                 return null;
@@ -172,6 +177,13 @@ public class httpSmartHttpHandler {
         else {
             to_add += "<h1>No Id entered!</h1>";
         }
+        return to_add;
+    }
+    private String mailsent()
+    {
+        String to_add;
+        smtpSender mail_sender = new smtpSender();
+
         return to_add;
     }
     private HashMap body_parser(String body)
