@@ -47,7 +47,6 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         }
         try {
             socket.close();
-            System.out.println("Data connection closed");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

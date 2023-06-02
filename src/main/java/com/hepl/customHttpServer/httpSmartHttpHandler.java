@@ -8,8 +8,10 @@ import com.hepl.Logger;
 import com.hepl.customHttpServer.PostgresqlJdbcLibrary.PostgresqlJdbcLibrary;
 import com.hepl.customHttpServer.authServerConnector.authClient;
 import com.hepl.customHttpServer.authServerConnector.data.Customer;
+import com.hepl.customHttpServer.ftpClientConnector.ftpClient;
 import com.hepl.customSmtpClient.smtpSender;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -121,7 +123,7 @@ public class httpSmartHttpHandler {
     }
     
     // All Smart Handler should be added in the two next method and create a new function to add the content.
-    private String[] listOfAvailablesFunctions = new String[]{"<!-- Add Here all available Activities -->","Error you have called an unset function"};
+    private String[] listOfAvailablesFunctions = new String[]{"<!-- Add Here all available Activities -->","<!-- Add Here the mail sent -->","Error you have called an unset function"};
     
     private String functionCaller(String s) throws IOException {
         switch(s)
@@ -179,11 +181,16 @@ public class httpSmartHttpHandler {
         }
         return to_add;
     }
-    private String mailsent()
-    {
+    private String mailsent() {
+        HashMap parsedParameters = this.body_parser(httpClientHandlerThread.requestBody);
+        ftpClient ftpC = new ftpClient("127.0.0.1","guest","guest","camp.pdf");
+        Thread ftpClient_thread = new Thread(ftpC);
+        ftpClient_thread.run();
+        smtpSender mail_sender = new smtpSender(parsedParameters.get("email").toString(),"Here is your information pdf !",new File("buffer_file.tmp").toPath());
+        Thread mail_thread = new Thread(mail_sender);
+        mail_sender.run();
         String to_add;
-        smtpSender mail_sender = new smtpSender();
-
+        to_add = "Mail sent to " + parsedParameters.get("mail_address");
         return to_add;
     }
     private HashMap body_parser(String body)
