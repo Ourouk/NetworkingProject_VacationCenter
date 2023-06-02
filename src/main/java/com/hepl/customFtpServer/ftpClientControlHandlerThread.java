@@ -6,6 +6,7 @@ import com.hepl.Logger;
 import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
@@ -329,6 +330,7 @@ public class ftpClientControlHandlerThread implements Runnable{
     }
     private void QUIThandler(){
         this.quitCommandLoop = true;
+        sendMsgToClient("221 Service closing control connection");
     }
 //endregion
 //region Class Functions tdr: Here are the functions that are used by the data Socket thread and the control Socket
@@ -336,7 +338,8 @@ public class ftpClientControlHandlerThread implements Runnable{
         try
         {
             Logger.log(s);
-            out.write(s+'\n');
+            out.write(s);
+            out.newLine();
             out.flush();
         } catch (Exception e)
         {
