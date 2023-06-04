@@ -183,14 +183,14 @@ public class httpSmartHttpHandler {
     }
     private String mailsent() {
         HashMap parsedParameters = this.body_parser(httpClientHandlerThread.requestBody);
-        ftpClient ftpC = new ftpClient("127.0.0.1","guest","guest","camp.pdf");
+        ftpClient ftpC = new ftpClient("127.0.0.1","guest","guest","camp.txt");
         Thread ftpClient_thread = new Thread(ftpC);
         ftpClient_thread.run();
         smtpSender mail_sender = new smtpSender(parsedParameters.get("email").toString(),"Here is your information pdf !",new File("buffer_file.tmp").toPath());
         Thread mail_thread = new Thread(mail_sender);
         mail_sender.run();
         String to_add;
-        to_add = "Mail sent to " + parsedParameters.get("mail_address");
+        to_add = "Mail sent to " + parsedParameters.get("email");
         return to_add;
     }
     private HashMap body_parser(String body)

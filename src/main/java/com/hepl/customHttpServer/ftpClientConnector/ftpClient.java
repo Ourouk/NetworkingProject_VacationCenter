@@ -4,10 +4,7 @@ import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 
 public class ftpClient implements Runnable {
     private String host;
@@ -32,15 +29,37 @@ public class ftpClient implements Runnable {
             ftpClient.connect(host);
             ftpClient.login(username, password);
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+            // Specify the input stream
+            InputStream inputStream;
+            // Specify the output file path
+            String outputPath = "path/to/output/file.txt";
 
-            OutputStream outputStream = new FileOutputStream(localFile);
-            boolean success = ftpClient.retrieveFile(remoteFile, outputStream);
-            outputStream.close();
+            try {
+                // Create the input stream (replace 'inputStream' with your actual InputStream)
+                inputStream = ftpClient.retrieveFileStream(this.remoteFile);
 
-            if (success) {
-                System.out.println("File downloaded successfully!");
-            } else {
-                System.out.println("File download failed!");
+                // Create the output file
+                File outputFile = new File(localFile);
+
+                // Create the output stream to write data to the file
+                OutputStream outputStream = new FileOutputStream(outputFile);
+
+                // Create a buffer to read data from the input stream
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+
+                // Read from the input stream and write to the output stream
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+
+                // Close the input and output streams
+                inputStream.close();
+                outputStream.close();
+
+                System.out.println("File successfully written to: " + outputPath);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         } catch (IOException e) {
             e.printStackTrace();

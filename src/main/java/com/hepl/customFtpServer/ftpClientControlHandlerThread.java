@@ -6,52 +6,45 @@ import com.hepl.Logger;
 import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 
 public class ftpClientControlHandlerThread implements Runnable{
-    public String dataIP;
-    public int dataPort;
+
+//region Data Handler shared Variable
+    private Thread dataThread;
+    public final ReentrantLock dataThreadLock = new ReentrantLock();
+//endregion
 
 //region Properties Type
     /**
      * Status of the server
      */
     public enum transferConnectionStatus {PASSIVE,ACTIVE}
-    public transferConnectionStatus currentTransferConnectionTypeStatus;
-
-    /**
-     * Indicates the authentication status of a user
-     */
-    private enum userStatus {LOGGED, NOLOGGING, PASSWORD}
-
-    /**
-     *  Cryptographic status
-     */
-    public enum cryptStatus {PLAIN,TLS}
-//endregion
-//region Actual Object Properties
-    public cryptStatus currentCryptStatus;
-
-    public final Socket s;
-    private boolean quitCommandLoop=false;
-
-    /**
-     * Users Configuration Variable
-     */
-
-    boolean defaultUsers = true; //If false You have to add manually users
-    private userStatus currentUserStatus;
 
 
-    //Output stream
-    BufferedWriter out;
+    public enum CommandName {
+        ACTV,
+        CWD,
+        LIST,
+        NLST,
+        PASS,
+        PASV,
+        PORT,
+        PWD,
+        QUIT,
+        RETR,
+        STOR,
+        TYPE,
+        USER
+
+    }
 
     /**
      * Right level management
@@ -60,7 +53,6 @@ public class ftpClientControlHandlerThread implements Runnable{
     {
         R,W,RW
     }
-
 
     /**
      * Class that define user needed by the server
@@ -82,6 +74,49 @@ public class ftpClientControlHandlerThread implements Runnable{
             this.right = right;
         }
     }
+
+
+
+    /**
+     * Indicates the authentication status of a user
+     */
+    private enum userStatus {LOGGED, NOLOGGING, PASSWORD}
+
+    /**
+     *  Cryptographic status
+     */
+    public enum cryptStatus {PLAIN,TLS}
+//endregion
+//region Actual Object Properties
+    public String dataIP;
+    public int dataPassivePort;
+    public cryptStatus currentCryptStatus;
+
+    public transferConnectionStatus currentTransferConnectionTypeStatus;
+
+    /**
+     * Permit the dataHandler and controlHandler to share the same parameters
+     */
+    public CommandName currentCommand;
+    public String[] currentCommentParameters;
+
+    public final Socket s;
+    private boolean quitCommandLoop=false;
+
+    /**
+     * Users Configuration Variable
+     */
+
+    boolean defaultUsers = true; //If false You have to add manually users
+    private userStatus currentUserStatus;
+
+
+    /**
+     * Default Output Used to communicate with c;oemt
+     */
+    private BufferedWriter out;
+
+
     private User currentuser = null;
 
     //TODO Refactor if dynamic user needed
@@ -132,7 +167,7 @@ public class ftpClientControlHandlerThread implements Runnable{
             this.users.add(new User("anonymous", "anonymous", right.R));
         }
         dataIP = s.getLocalAddress().getHostAddress(); //Default Ip address
-        dataPort = s.getLocalPort();
+        dataPassivePort = s.getLocalPort() -1 ;
         //Set the default port
         if (sslContext == null) {
             currentCryptStatus = cryptStatus.PLAIN;
@@ -153,48 +188,80 @@ public class ftpClientControlHandlerThread implements Runnable{
                 }
             }
         } catch (Exception e) {
-            java.util.logging.Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
+            //Handle bad connection closing
+            new RuntimeException(e);
         }
     }
     private void executeCommand(String c)
     {
         Logger.log(c);
-        String [] cSplit;
         if(c != null)
-            cSplit = c.split(" ");
+            this.currentCommentParameters = c.split(" ");
         else
             throw new NullPointerException("No command received");
-        String Command = cSplit[0];
-        switch (Command) {
-            case "PWD" -> PWDhandler();
-            case "CWD" -> CWDhandler(cSplit);
-            case "NLST", "LIST" -> NLSThandler(cSplit);
-            case "TYPE" -> TYPEhandler(cSplit);
-            case "PORT" -> PORThandler(cSplit);
-            case "USER" -> USERhandler(cSplit);
-            case "PASS" -> PASShandler(cSplit);
-            case "PASV" -> PASVhandler();
-            case "ACTV" -> ACTVhandler();
-            case "RETR" -> RETRhandler(cSplit);
-            case "STOR" -> STORhandler(cSplit);
-            case "QUIT" -> QUIThandler();
-            default -> sendMsgToClient("500 Command not implemented :" + Command);
+        switch (this.currentCommentParameters[0]) {
+            case "PWD":
+                currentCommand = CommandName.PWD;
+                this.PWDhandler();
+                break;
+            case "CWD":
+                currentCommand = CommandName.CWD;
+                CWDhandler(this.currentCommentParameters);
+                break;
+            case "NLST":
+                currentCommand = CommandName.NLST;
+                NLSThandler(this.currentCommentParameters);
+                break;
+            case "LIST":
+                currentCommand = CommandName.NLST;
+                NLSThandler(this.currentCommentParameters);
+                break;
+            case "TYPE":
+                currentCommand = CommandName.TYPE;
+                TYPEhandler(this.currentCommentParameters);
+                break;
+            case "PORT":
+                currentCommand = CommandName.PORT;
+                PORThandler(this.currentCommentParameters);
+                break;
+            case "USER":
+                currentCommand = CommandName.USER;
+                USERhandler(this.currentCommentParameters);
+                break;
+            case "PASS":
+                currentCommand = CommandName.PASS;
+                PASShandler(this.currentCommentParameters);
+                break;
+            case "PASV":
+                currentCommand = CommandName.PASV;
+                PASVhandler(this.currentCommentParameters);
+                break;
+            case "ACTV":
+                currentCommand = CommandName.ACTV;
+                PORThandler(this.currentCommentParameters);
+                break;
+            case "RETR":
+                currentCommand = CommandName.RETR;
+                RETRhandler(this.currentCommentParameters);
+                break;
+            case "STOR":
+                currentCommand = CommandName.STOR;
+                STORhandler(this.currentCommentParameters);
+                break;
+            case "QUIT":
+                currentCommand = CommandName.QUIT;
+                QUIThandler();
+                break;
+            default:
+                sendMsgToClient("500 Command not implemented: " + this.currentCommentParameters[0]);
+                break;
         }
     }
 
     private void PORThandler(String[] cSplit) {
-        if(cSplit.length > 1) {
-            String[] port = cSplit[1].split(",");
-            if (port.length == 6) {
-                this.dataPort = Integer.parseInt(port[4]) * 256 + Integer.parseInt(port[5]);
-                this.dataIP = port[0] + "." + port[1] + "." + port[2] + "." + port[3];
-                sendMsgToClient("200 PORT command successful. Set to "+ this.dataPort + ". Consider using PASV.");
-            } else {
-                sendMsgToClient("501 Syntax error in parameters or arguments.");
-            }
-        }
-        else
-            sendMsgToClient("501 Syntax error in parameters or arguments.");
+        this.currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
+        this.activateDataThread();
+        this.sendMsgToClient("200 PORT command successful.");
     }
 
     private void TYPEhandler(String[] cSplit) {
@@ -253,8 +320,7 @@ public class ftpClientControlHandlerThread implements Runnable{
     }
 
     private void NLSThandler(String[] cSplit) {
-        Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.NLST,cSplit));
-        dataThread.start();
+        this.activateDataThread();
     }
 
     private void USERhandler(String[] cSplit){
@@ -291,17 +357,9 @@ public class ftpClientControlHandlerThread implements Runnable{
             sendMsgToClient("530 Not logged in (empty password)");
         }
     }
-    private void PASVhandler() {
+    private void PASVhandler(String[] cSplit) {
         currentTransferConnectionTypeStatus = transferConnectionStatus.PASSIVE;
-        //Trying to give a hint to the client on how to connect properly to the server in passive mode
-        String myIp = s.getLocalAddress().getHostAddress(); //TODO handle IPV6
-        String[] myIpSplit = myIp.split("\\.");
-
-        int p1 = dataPort / 256;
-        int p2 = dataPort % 256;
-
-        sendMsgToClient("227 Entering Passive Mode (" + myIpSplit[0] + "," + myIpSplit[1] + "," + myIpSplit[2] + ","
-                + myIpSplit[3] + "," + p1 + "," + p2 + ")");
+        this.activateDataThread();
     }
     private void ACTVhandler() {
         currentTransferConnectionTypeStatus = transferConnectionStatus.ACTIVE;
@@ -310,8 +368,7 @@ public class ftpClientControlHandlerThread implements Runnable{
     private void RETRhandler(String[] cSplit){
         if(currentuser.right != right.W)
         {
-            Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.RETR,cSplit));
-            dataThread.start();
+            this.activateDataThread();
         }
         else {
             sendMsgToClient("530 No right to retrieve file");
@@ -320,8 +377,7 @@ public class ftpClientControlHandlerThread implements Runnable{
     private void STORhandler(String[] cSplit){
         if(currentuser.right != right.R)
         {
-            Thread dataThread = new Thread(new ftpClientDataTransferHandlerThread(this,ftpClientDataTransferHandlerThread.commandType.STOR,cSplit));
-            dataThread.start();
+            this.activateDataThread();
         }
         else
         {
@@ -333,21 +389,42 @@ public class ftpClientControlHandlerThread implements Runnable{
         sendMsgToClient("221 Service closing control connection");
     }
 //endregion
+//region datahandle help
+    private Thread activateDataThread()
+    {
+        synchronized (this.dataThreadLock) {
+            if (dataThread != null  && dataThread.isAlive()) {
+                dataThreadLock.notify();
+            } else {
+                dataThread = new Thread(new ftpClientDataTransferHandlerThread(this));
+                dataThread.start();
+                try {
+                    this.dataThreadLock.wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return dataThread;
+    }
+//endregion
+
 //region Class Functions tdr: Here are the functions that are used by the data Socket thread and the control Socket
     public void sendMsgToClient(String s){
-        try
-        {
-            Logger.log(s);
-            out.write(s);
-            out.newLine();
-            out.flush();
-        } catch (Exception e)
-        {
-            java.util.logging.Logger.getLogger(ftpClientControlHandlerThread.class.getName()).log(Level.SEVERE, null, e);
+        synchronized (dataThreadLock) {
+            try {
+                Logger.log(s);
+                out.write(s);
+                out.newLine();
+                out.flush();
+                dataThread.notify();
+            } catch (Exception e) {
+                new RuntimeException(e);
+            }
         }
     }
     public String getCurrentUser()
-{
+    {
         return currentuser.username;
     }
     public String getCurrentUsersRightsPosix() {
