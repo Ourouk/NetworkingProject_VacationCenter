@@ -183,10 +183,31 @@ public class httpSmartHttpHandler {
     }
     private String mailsent() {
         HashMap parsedParameters = this.body_parser(httpClientHandlerThread.requestBody);
-        ftpClient ftpC = new ftpClient("127.0.0.1","guest","guest","camp.txt");
-        Thread ftpClient_thread = new Thread(ftpC);
-        ftpClient_thread.run();
-        smtpSender mail_sender = new smtpSender(parsedParameters.get("email").toString(),"Here is your information pdf !",new File("buffer_file.tmp").toPath());
+        //ftpClient ftpC = new ftpClient("127.0.0.1","guest","guest","camp.pdf");
+        //Thread ftpClient_thread = new Thread(ftpC);
+        //ftpClient_thread.run();
+        String content =
+                "The ip address is 127.0.0.1 and the login is guest:guest \n\n" +
+                "Here are the instructions on how to use the FTP client in the Command Prompt (CMD) on Windows:\n" +
+                "\n" +
+                "    Open the Command Prompt: Press the Windows key, type \"cmd,\" and hit Enter to open the Command Prompt.\n" +
+                "\n" +
+                "    Launch the FTP client: In the Command Prompt window, type ftp and hit Enter. This will start the FTP client and display the ftp> prompt.\n" +
+                "\n" +
+                "    Connect to an FTP server: To connect to an FTP server, use the open command followed by the server's IP address or hostname. For example, type open ftp.example.com and hit Enter. If the connection is successful, you will be prompted to enter your FTP username and password.\n" +
+                "\n" +
+                "    Enter FTP credentials: After connecting to the FTP server, you need to provide your FTP username and password. Enter the username and hit Enter. Then enter the password and hit Enter. If the credentials are correct, you will be successfully logged in to the FTP server.\n" +
+                "\n" +
+                "    Explore FTP server contents: Once logged in, you can navigate the FTP server's directory structure using various commands. Some commonly used commands are:\n" +
+                "        dir: List the files and directories in the current directory on the FTP server.\n" +
+                "        cd: Change the current directory on the FTP server. For example, cd directory_name will change to the specified directory.\n" +
+                "        get: Download a file from the FTP server to your local machine. For example, get file.txt will download the file named \"file.txt\".\n" +
+                "        put: Upload a file from your local machine to the FTP server. For example, put local_file.txt will upload the file \"local_file.txt\" to the current directory on the FTP server.\n" +
+                "\n" +
+                "    Disconnect from the FTP server: To disconnect from the FTP server, type bye and hit Enter. This will close the FTP client.\n" +
+                "\n" +
+                "These are the basic steps to use the FTP client in the Command Prompt. Remember to replace ftp.example.com with the actual FTP server's IP address or hostname, and adjust the commands based on your requirements. You can also type help in the FTP client to get a list of available commands and their descriptions.";
+        smtpSender mail_sender = new smtpSender(parsedParameters.get("email").toString(),content,"Camp.pdf",new File("buffer_file.tmp").toPath());
         Thread mail_thread = new Thread(mail_sender);
         mail_sender.run();
         String to_add;

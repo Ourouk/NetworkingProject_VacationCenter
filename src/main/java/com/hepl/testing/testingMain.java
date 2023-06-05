@@ -11,7 +11,7 @@ public class testingMain {
         new authServerConnector();
     }
     static public void smtpClientTesting(){
-        smtpSender smtp = new smtpSender("test@mail.com","Here's my test mail",new File("camps_vacances_fr.pdf").toPath());
+        smtpSender smtp = new smtpSender("test@mail.com","Here's my test mail","",new File("camps_vacances_fr.pdf").toPath());
         Thread smtpSenderThread = new Thread(smtp);
         smtpSenderThread.run();
 

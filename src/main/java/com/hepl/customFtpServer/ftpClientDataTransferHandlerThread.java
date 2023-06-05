@@ -24,7 +24,6 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
         this.controller = ftpClientControlHandlerThread;
     }
 
-    public enum commandType {STOR,RETR,NLST,PORT,PASV}
     public enum transferType {ASCII,BINARY,WAITING}
     private transferType currentTransferType;
 
@@ -34,7 +33,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
             synchronized (this.controller.dataThreadLock){
                 switch (controller.currentCommand) {
                     case STOR, RETR -> currentTransferType = transferType.BINARY;
-                    case NLST -> currentTransferType = transferType.ASCII;
+                    case NLST,LIST -> currentTransferType = transferType.ASCII;
                     case PORT, PASV -> {
                         try {
                             if(this.socket !=  null && this.socket.isConnected())
@@ -46,7 +45,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
                         }
                         currentTransferType = transferType.WAITING;
                     }
-                    default -> currentTransferType = transferType.WAITING;
+                    default -> throw new RuntimeException("Unexpected value: " + controller.currentCommand);
                 }
 
 
@@ -58,13 +57,6 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
                     }
                 } else {
                     sendControllerMsgToClient("150 Opening data connection for file transfer");
-                    if(socket == null || socket.isClosed()) {
-                        try {
-                            this.socket = createDataConnection();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
                     if (socket != null && socket.isConnected()) {
                         switch (controller.currentCommand) {
                             case STOR -> storFile(pathHandler());
@@ -88,16 +80,7 @@ public class ftpClientDataTransferHandlerThread implements Runnable{
     }
 
     private void sendControllerMsgToClient(String s) {
-        synchronized (controller.dataThreadLock) {
-            controller.sendMsgToClient(s);
-            try {
-                controller.dataThreadLock.wait();
-                wait(10);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
+        controller.sendMsgToClient(s);
     }
 
     private File pathHandler() {

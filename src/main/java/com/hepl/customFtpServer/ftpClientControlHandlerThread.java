@@ -411,17 +411,15 @@ public class ftpClientControlHandlerThread implements Runnable{
 
 //region Class Functions tdr: Here are the functions that are used by the data Socket thread and the control Socket
     public void sendMsgToClient(String s){
-        synchronized (dataThreadLock) {
-            try {
-                Logger.log(s);
-                out.write(s);
-                out.newLine();
-                out.flush();
-                dataThread.notify();
-            } catch (Exception e) {
-                new RuntimeException(e);
-            }
+        Logger.log(s);
+        try {
+            out.write(s);
+            out.newLine();
+            out.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+
     }
     public String getCurrentUser()
     {

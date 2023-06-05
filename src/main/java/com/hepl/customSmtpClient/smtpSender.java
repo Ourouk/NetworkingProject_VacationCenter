@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 public class smtpSender implements Runnable{
+    private String filename;
     private String mailto;
     private String content;
     private Path filepath;
@@ -20,10 +21,11 @@ public class smtpSender implements Runnable{
         this.mailto = mailto;
         this.content = content;
     }
-    public smtpSender(String mailto,String content,Path filepath)
+    public smtpSender(String mailto,String content,String filename,Path filepath)
     {
         this.mailto = mailto;
         this.content = content;
+        this.filename = filename;
         this.filepath = filepath;
     }
     @Override
@@ -44,11 +46,11 @@ public class smtpSender implements Runnable{
         try {
             message.setFrom(new InternetAddress("SENDER_EMAIL_ADDRESS"));
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(mailto));
-            message.setSubject("Test Email");
+            message.setSubject("Voyage Information");
             message.setText(content);
             if(filepath != null) {
                 message.setDataHandler(new DataHandler(new FileDataSource(filepath.toString())));
-                message.setFileName(filepath.toString());
+                message.setFileName(filename);
             }
             Transport.send(message);
         } catch (MessagingException e) {
