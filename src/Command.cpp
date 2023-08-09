@@ -13,7 +13,7 @@ void * CommandBuilder(string Command, string Attribute_in, int &lenght){
     if (Attribute_in.length() % 16 == 0) {
         aes_imposed_size = Attribute_in.length();
     } else {
-        aes_imposed_size = Attribute_in.length() + 16;
+        aes_imposed_size = Attribute_in.length() + 16 - (Attribute_in.length() % 16);
         for (int i = 0; i < aes_imposed_size - Attribute_in.length(); i++) {
             Attribute_in += "\0"; //Empty char
         }
@@ -44,7 +44,8 @@ void * CommandBuilder(string Command, string Attribute_in, int &lenght){
 
     //Communicate the size of the byte array to be sent
     lenght = size;
-
+    cout<< "Plain message to be sent : "<< bytes << Command  << Attribute_in << endl;
+    cout<< "Encrypted message to be sent : "<< str << endl;
     //Note the message doesn't contain the '\0' char
     return str;
 }
@@ -78,9 +79,9 @@ bool CommandReader(int new_socket,vector<string> & properties_buff){
 
 
     //Decrypt command_content_buffer using AES-128
-    
+        cout<< "Message received : "<< command_type_buffer << command_size_buffer  << command_content_buffer<< endl;
         decrypt_string((uint8_t*)command_content_buffer,(uint8_t*)key);
-
+        cout<< "Decrypted message received : "<< command_type_buffer << command_size_buffer  << command_content_buffer<< endl;
     //Parse the command inside a vector using separator ','
         stringstream buffer_line(command_content_buffer);
         string propertie_buff,line_buff;
@@ -88,14 +89,12 @@ bool CommandReader(int new_socket,vector<string> & properties_buff){
         {
             properties_buff.push_back(propertie_buff);
         }
-        #ifdef DEBUG
+        cout<< "Parsed message received : ";
         for(int i = 0; (size_t)i > properties_buff.size(); i++)
         {
-            cout << properties_buff[i];cout.flush();
+            cout << properties_buff[i]<<',';cout.flush();
         }
         cout<< endl;
-        #endif
-        
     //Free all the memory allocation made by recv_expectedLenght
         free(command_content_buffer);
     return 1;
