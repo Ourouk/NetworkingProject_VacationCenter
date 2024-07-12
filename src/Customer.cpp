@@ -3,7 +3,7 @@ Customer::Customer()
 {
 
 }
-Customer::Customer(string id,string name,string string,int_fast8_t day,int_fast8_t month,int year,bool presence)
+Customer::Customer(string id,string name,string string,uint8_t day,uint8_t month,int year,bool presence)
 {
     this->setId(id);
     this->setName(name);
@@ -68,7 +68,7 @@ void Customer::setSurname(string Surname)
 {
     this->surname = Surname;
 }
-void Customer::setBirthDate(int_fast8_t day,int_fast8_t month ,int year)
+void Customer::setBirthDate(uint8_t day,uint8_t month ,int year)
 {
     this->day = day;
     this->month= month;
@@ -80,11 +80,11 @@ void Customer::setBirthDate(string day,string month,string year)
     this->month = (std::stoi(month));
     this->year = (std::stoi(year));
 }
-void Customer::setDay(int_fast8_t d)
+void Customer::setDay(uint8_t d)
 {
     this->day = d;
 }
-void Customer::setMonth(int_fast8_t m)
+void Customer::setMonth(uint8_t m)
 {
     this->month = m;
 }

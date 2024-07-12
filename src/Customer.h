@@ -1,5 +1,6 @@
 #ifndef CUSTOMER
 #define CUSTOMER
+
 #include <iostream>
 #include <ctime>
 #include <arpa/inet.h>
@@ -13,7 +14,7 @@
 #include <vector>
 
 using namespace std;
-    class Customer 
+    class Customer
     {
         private:
             string id;
@@ -21,12 +22,12 @@ using namespace std;
             string surname;
             string atVacationCenter;
             //Birth date
-            int_fast8_t day,month;
+            uint8_t day,month;
             int year;
 
         public:
             Customer();
-            Customer(string,string,string,int_fast8_t,int_fast8_t,int,bool);
+            Customer(string,string,string,uint8_t,uint8_t,int,bool);
             Customer(string);
             ~Customer();
             //Getter
@@ -40,10 +41,10 @@ using namespace std;
             void setId(string);
             void setName(string);
             void setSurname(string);
-            void setBirthDate(int_fast8_t,int_fast8_t,int);
+            void setBirthDate(uint8_t,uint8_t,int);
             void setBirthDate(string,string,string);
-            void setDay(int_fast8_t);
-            void setMonth(int_fast8_t);
+            void setDay(uint8_t);
+            void setMonth(uint8_t);
             void setYear(int);
             void setIs_atVacationCenter(string);
             void setIs_atVacationCenter(bool);
